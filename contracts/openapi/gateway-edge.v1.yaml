@@ -1,0 +1,31 @@
+openapi: 3.0.3
+info:
+  title: Gateway Edge Contract
+  version: 1.0.0
+  description: 외부 노출 경로와 라우트 타입 계약
+servers:
+  - url: http://gateway:8080
+paths:
+  /v1/users/signup:
+    post:
+      summary: PUBLIC route
+      responses:
+        '200': { description: OK }
+  /v1/users/me:
+    get:
+      summary: PUBLIC route (downstream final auth)
+      responses:
+        '200': { description: OK }
+        '401': { description: Unauthorized }
+  /v1/internal/users/find-or-create-and-link-social:
+    post:
+      summary: INTERNAL route
+      parameters:
+        - in: header
+          name: X-Internal-Request-Secret
+          required: true
+          schema:
+            type: string
+      responses:
+        '200': { description: OK }
+        '403': { description: Forbidden }

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ErrorEnvelope",
+  "type": "object",
+  "required": ["httpStatus", "success", "code", "message"],
+  "properties": {
+    "httpStatus": { "type": "integer" },
+    "success": { "type": "boolean", "const": false },
+    "code": { "type": ["string", "integer"] },
+    "message": { "type": "string" },
+    "data": { "type": ["object", "array", "string", "number", "boolean", "null"] }
+  },
+  "additionalProperties": true
+}
