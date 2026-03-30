@@ -1,0 +1,85 @@
+openapi: 3.0.3
+info:
+  title: Auth Service Contract
+  version: 1.0.0
+  description: auth-service 핵심 인증/SSO 계약
+servers:
+  - url: http://auth-service:8081
+paths:
+  /auth/login:
+    post:
+      summary: 로그인
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200': { description: OK }
+        '401': { description: Unauthorized }
+  /auth/refresh:
+    post:
+      summary: 토큰 갱신
+      responses:
+        '200': { description: OK }
+        '401': { description: Unauthorized }
+  /auth/logout:
+    post:
+      summary: 로그아웃
+      responses:
+        '200': { description: OK }
+  /auth/sso/start:
+    get:
+      summary: SSO 시작
+      parameters:
+        - in: query
+          name: page
+          schema: { type: string }
+        - in: query
+          name: redirect_uri
+          schema: { type: string }
+      responses:
+        '302': { description: Redirect }
+  /auth/oauth2/authorize/{provider}:
+    get:
+      summary: OAuth2 provider authorize
+      parameters:
+        - in: path
+          name: provider
+          required: true
+          schema: { type: string }
+      responses:
+        '302': { description: Redirect }
+  /auth/exchange:
+    post:
+      summary: SSO 티켓 교환
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ticket]
+              properties:
+                ticket: { type: string }
+      responses:
+        '200': { description: OK }
+  /auth/internal/session/validate:
+    post:
+      summary: 내부 세션 검증
+      responses:
+        '200': { description: OK }
+        '401': { description: Unauthorized }
+  /auth/me:
+    get:
+      summary: 현재 사용자 정보
+      responses:
+        '200': { description: OK }
+        '401': { description: Unauthorized }

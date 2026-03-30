@@ -6,7 +6,7 @@
 | Auth | https://github.com/jho951/Auth-server | main | `CONTRACT_SYNC.md` | adopted |
 | User | https://github.com/jho951/User-server | main | `CONTRACT_SYNC.md` | adopted |
 | Redis | https://github.com/jho951/Redis-server | main | `CONTRACT_SYNC.md` | adopted |
-| Block | https://github.com/jho951/Block-server | dev | `CONTRACT_SYNC.md` | pending-merge(PR) |
+| Block | https://github.com/jho951/Block-server | dev | `CONTRACT_SYNC.md` | adopted |
 
 ## Notes
 - Block-server는 `dev` 브랜치가 기준입니다.
