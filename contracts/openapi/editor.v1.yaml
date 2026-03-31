@@ -1,0 +1,998 @@
+openapi: 3.0.3
+info:
+  title: Document Service Contract v1
+  version: 1.0.0
+  description: |
+    현재 Block-server 구현의 v1 계약이다.
+    서비스 내부 경로는 `/documents/**`, `/admin/**`이며 Gateway 외부 경로는 `/v1/documents/**`, `/v1/admin/**`로 노출된다.
+servers:
+  - url: http://documents-service:8083
+paths:
+  /documents:
+    get:
+      summary: Document 목록 조회
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalResponseDocumentList'
+              examples:
+                success:
+                  summary: 내 문서 목록 조회 성공
+                  value:
+                    httpStatus: OK
+                    success: true
+                    message: 요청 응답 성공
+                    code: 200
+                    data:
+                      - id: 3f2b4e6a-3c0a-4b2f-8e18-5f4a9f4e7a11
+                        parentId: null
+                        title: Project Notes
+                        icon: null
+                        cover: null
+                        visibility: PRIVATE
+                        sortKey: k00012
+                        version: 3
+                        createdBy: user-123
+                        updatedBy: user-123
+                        createdAt: '2026-03-31T09:00:00'
+                        updatedAt: '2026-03-31T09:10:00'
+                        deletedAt: null
+        default:
+          $ref: '#/components/responses/EditorErrorResponse'
+    post:
+      summary: Document 생성
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDocumentRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalResponseDocument'
+              examples:
+                created:
+                  summary: 문서 생성 성공
+                  value:
+                    httpStatus: CREATED
+                    success: true
+                    message: 리소스 생성 성공
+                    code: 201
+                    data:
+                      id: 3f2b4e6a-3c0a-4b2f-8e18-5f4a9f4e7a11
+                      parentId: null
+                      title: Project Notes
+                      icon: null
+                      cover: null
+                      visibility: PRIVATE
+                      sortKey: k00012
+                      version: 1
+                      createdBy: user-123
+                      updatedBy: user-123
+                      createdAt: '2026-03-31T09:00:00'
+                      updatedAt: '2026-03-31T09:00:00'
+                      deletedAt: null
+        default:
+          $ref: '#/components/responses/EditorErrorResponse'
+  /documents/trash:
+    get:
+      summary: 휴지통 Document 목록 조회
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalResponseTrashDocumentList'
+              examples:
+                success:
+                  summary: 휴지통 목록 조회 성공
+                  value:
+                    httpStatus: OK
+                    success: true
+                    message: 요청 응답 성공
+                    code: 200
+                    data:
+                      - documentId: 3f2b4e6a-3c0a-4b2f-8e18-5f4a9f4e7a11
+                        title: Project Notes
+                        parentId: null
+                        deletedAt: '2026-03-31T10:00:00'
+                        purgeAt: '2026-03-31T10:05:00'
+        default:
+          $ref: '#/components/responses/EditorErrorResponse'
+  /documents/{documentId}:
+    get:
+      summary: Document 단건 조회
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalResponseDocument'
+              examples:
+                success:
+                  summary: 문서 조회 성공
+                  value:
+                    httpStatus: OK
+                    success: true
+                    message: 요청 응답 성공
+                    code: 200
+                    data:
+                      id: 3f2b4e6a-3c0a-4b2f-8e18-5f4a9f4e7a11
+                      parentId: null
+                      title: Project Notes
+                      icon: null
+                      cover: null
+                      visibility: PRIVATE
+                      sortKey: k00012
+                      version: 3
+                      createdBy: user-123
+                      updatedBy: user-123
+                      createdAt: '2026-03-31T09:00:00'
+                      updatedAt: '2026-03-31T09:10:00'
+                      deletedAt: null
+        default:
+          $ref: '#/components/responses/EditorErrorResponse'
+    patch:
+      summary: Document 수정
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDocumentRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalResponseDocument'
+        default:
+          $ref: '#/components/responses/EditorErrorResponse'
+    delete:
+      summary: Document 삭제
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalResponseVoid'
+        default:
+          $ref: '#/components/responses/EditorErrorResponse'
+  /documents/{documentId}/blocks:
+    get:
+      summary: Document의 Block 목록 조회
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalResponseBlockList'
+              examples:
+                success:
+                  summary: 블록 목록 조회 성공
+                  value:
+                    httpStatus: OK
+                    success: true
+                    message: 요청 응답 성공
+                    code: 200
+                    data:
+                      - id: 6c8d7d4f-7a67-4f3d-a0ec-7d7b7c9f4c10
+                        documentId: 3f2b4e6a-3c0a-4b2f-8e18-5f4a9f4e7a11
+                        parentId: null
+                        type: TEXT
+                        content:
+                          format: rich_text
+                          schemaVersion: 1
+                          segments:
+                            - text: Hello world
+                              marks: []
+                        sortKey: k00005
+                        version: 2
+                        createdBy: user-123
+                        updatedBy: user-123
+                        createdAt: '2026-03-31T09:01:00'
+                        updatedAt: '2026-03-31T09:02:00'
+                        deletedAt: null
+        default:
+          $ref: '#/components/responses/EditorErrorResponse'
+  /documents/{documentId}/visibility:
+    patch:
+      summary: Document 공개 상태 수정
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDocumentVisibilityRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalResponseDocument'
+        default:
+          $ref: '#/components/responses/EditorErrorResponse'
+  /documents/{documentId}/transactions:
+    post:
+      summary: Document transaction 반영
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentTransactionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalResponseDocumentTransaction'
+              examples:
+                success:
+                  summary: transaction 반영 성공
+                  value:
+                    httpStatus: OK
+                    success: true
+                    message: 요청 응답 성공
+                    code: 200
+                    data:
+                      documentId: 3f2b4e6a-3c0a-4b2f-8e18-5f4a9f4e7a11
+                      documentVersion: 4
+                      batchId: batch-001
+                      appliedOperations:
+                        - opId: op-1
+                          status: APPLIED
+                          tempId: temp-1
+                          blockId: 6c8d7d4f-7a67-4f3d-a0ec-7d7b7c9f4c10
+                          version: 2
+                          sortKey: k00005
+                          deletedAt: null
+        default:
+          $ref: '#/components/responses/EditorErrorResponse'
+  /documents/{documentId}/trash:
+    patch:
+      summary: Document 휴지통 이동
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalResponseVoid'
+              examples:
+                success:
+                  summary: 무상태 성공 응답
+                  value:
+                    httpStatus: OK
+                    success: true
+                    message: 요청 응답 성공
+                    code: 200
+                    data: null
+        default:
+          $ref: '#/components/responses/EditorErrorResponse'
+  /documents/{documentId}/restore:
+    post:
+      summary: Document 복구
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalResponseVoid'
+              examples:
+                success:
+                  summary: 무상태 성공 응답
+                  value:
+                    httpStatus: OK
+                    success: true
+                    message: 요청 응답 성공
+                    code: 200
+                    data: null
+        default:
+          $ref: '#/components/responses/EditorErrorResponse'
+  /documents/{documentId}/move:
+    post:
+      summary: Document 이동
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveDocumentRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalResponseVoid'
+              examples:
+                success:
+                  summary: 무상태 성공 응답
+                  value:
+                    httpStatus: OK
+                    success: true
+                    message: 요청 응답 성공
+                    code: 200
+                    data: null
+        default:
+          $ref: '#/components/responses/EditorErrorResponse'
+  /admin/documents/{documentId}/blocks:
+    post:
+      summary: 관리자 블록 생성
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentTransactionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalResponseDocumentTransaction'
+              examples:
+                success:
+                  summary: 관리자 블록 생성 성공
+                  value:
+                    httpStatus: OK
+                    success: true
+                    message: 요청 응답 성공
+                    code: 200
+                    data:
+                      documentId: 3f2b4e6a-3c0a-4b2f-8e18-5f4a9f4e7a11
+                      documentVersion: 4
+                      batchId: batch-001
+                      appliedOperations:
+                        - opId: op-1
+                          status: APPLIED
+                          tempId: temp-1
+                          blockId: 6c8d7d4f-7a67-4f3d-a0ec-7d7b7c9f4c10
+                          version: 2
+                          sortKey: k00005
+                          deletedAt: null
+        default:
+          $ref: '#/components/responses/EditorErrorResponse'
+  /admin/blocks/{blockId}:
+    patch:
+      summary: 관리자 블록 수정
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: blockId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentTransactionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalResponseDocumentTransaction'
+              examples:
+                success:
+                  summary: 관리자 블록 수정 성공
+                  value:
+                    httpStatus: OK
+                    success: true
+                    message: 요청 응답 성공
+                    code: 200
+                    data:
+                      documentId: 3f2b4e6a-3c0a-4b2f-8e18-5f4a9f4e7a11
+                      documentVersion: 5
+                      batchId: batch-002
+                      appliedOperations:
+                        - opId: op-2
+                          status: APPLIED
+                          tempId: null
+                          blockId: 6c8d7d4f-7a67-4f3d-a0ec-7d7b7c9f4c10
+                          version: 3
+                          sortKey: k00005
+                          deletedAt: null
+        default:
+          $ref: '#/components/responses/EditorErrorResponse'
+    delete:
+      summary: 관리자 블록 삭제
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: blockId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentTransactionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalResponseDocumentTransaction'
+              examples:
+                success:
+                  summary: 관리자 블록 삭제 성공
+                  value:
+                    httpStatus: OK
+                    success: true
+                    message: 요청 응답 성공
+                    code: 200
+                    data:
+                      documentId: 3f2b4e6a-3c0a-4b2f-8e18-5f4a9f4e7a11
+                      documentVersion: 6
+                      batchId: batch-003
+                      appliedOperations:
+                        - opId: op-3
+                          status: APPLIED
+                          tempId: null
+                          blockId: 6c8d7d4f-7a67-4f3d-a0ec-7d7b7c9f4c10
+                          version: 4
+                          sortKey: null
+                          deletedAt: '2026-03-31T10:30:00'
+        default:
+          $ref: '#/components/responses/EditorErrorResponse'
+  /admin/blocks/{blockId}/move:
+    post:
+      summary: 관리자 블록 이동
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: blockId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentTransactionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalResponseDocumentTransaction'
+              examples:
+                success:
+                  summary: 관리자 블록 이동 성공
+                  value:
+                    httpStatus: OK
+                    success: true
+                    message: 요청 응답 성공
+                    code: 200
+                    data:
+                      documentId: 3f2b4e6a-3c0a-4b2f-8e18-5f4a9f4e7a11
+                      documentVersion: 7
+                      batchId: batch-004
+                      appliedOperations:
+                        - opId: op-4
+                          status: APPLIED
+                          tempId: null
+                          blockId: 6c8d7d4f-7a67-4f3d-a0ec-7d7b7c9f4c10
+                          version: 5
+                          sortKey: k00008
+                          deletedAt: null
+        default:
+          $ref: '#/components/responses/EditorErrorResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    EditorErrorResponse:
+      description: Editor 서비스 에러 응답
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GlobalResponseError'
+          examples:
+            unauthorized:
+              summary: 인증 실패
+              value:
+                httpStatus: UNAUTHORIZED
+                success: false
+                message: 인증 정보가 없습니다.
+                code: 9001
+                data: null
+            documentNotFound:
+              summary: 문서 없음
+              value:
+                httpStatus: NOT_FOUND
+                success: false
+                message: 요청한 문서를 찾을 수 없습니다.
+                code: 9004
+                data: null
+            blockNotFound:
+              summary: 블록 없음
+              value:
+                httpStatus: NOT_FOUND
+                success: false
+                message: 요청한 블록을 찾을 수 없습니다.
+                code: 9006
+                data: null
+            conflict:
+              summary: 충돌
+              value:
+                httpStatus: CONFLICT
+                success: false
+                message: 요청이 현재 리소스 상태와 충돌합니다.
+                code: 9005
+                data: null
+            invalidRequest:
+              summary: 잘못된 요청
+              value:
+                httpStatus: BAD_REQUEST
+                success: false
+                message: 잘못된 요청입니다.
+                code: 9015
+                data: null
+  schemas:
+    GlobalResponseError:
+      type: object
+      properties:
+        httpStatus:
+          type: string
+        success:
+          type: boolean
+        message:
+          type: string
+        code:
+          type: integer
+        data:
+          nullable: true
+    GlobalResponseVoid:
+      type: object
+      properties:
+        httpStatus:
+          type: string
+        success:
+          type: boolean
+        message:
+          type: string
+        code:
+          type: integer
+        data:
+          nullable: true
+    GlobalResponseDocument:
+      type: object
+      properties:
+        httpStatus:
+          type: string
+        success:
+          type: boolean
+        message:
+          type: string
+        code:
+          type: integer
+        data:
+          $ref: '#/components/schemas/DocumentResponse'
+    GlobalResponseDocumentList:
+      type: object
+      properties:
+        httpStatus:
+          type: string
+        success:
+          type: boolean
+        message:
+          type: string
+        code:
+          type: integer
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentResponse'
+    GlobalResponseBlockList:
+      type: object
+      properties:
+        httpStatus:
+          type: string
+        success:
+          type: boolean
+        message:
+          type: string
+        code:
+          type: integer
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlockResponse'
+    GlobalResponseTrashDocumentList:
+      type: object
+      properties:
+        httpStatus:
+          type: string
+        success:
+          type: boolean
+        message:
+          type: string
+        code:
+          type: integer
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrashDocumentResponse'
+    GlobalResponseDocumentTransaction:
+      type: object
+      properties:
+        httpStatus:
+          type: string
+        success:
+          type: boolean
+        message:
+          type: string
+        code:
+          type: integer
+        data:
+          $ref: '#/components/schemas/DocumentTransactionResponse'
+    DocumentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+        title:
+          type: string
+        icon:
+          nullable: true
+          type: object
+          additionalProperties: true
+        cover:
+          nullable: true
+          type: object
+          additionalProperties: true
+        visibility:
+          type: string
+          enum: [PUBLIC, PRIVATE]
+        sortKey:
+          type: string
+        version:
+          type: integer
+        createdBy:
+          type: string
+          nullable: true
+        updatedBy:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+    TrashDocumentResponse:
+      type: object
+      properties:
+        documentId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+        deletedAt:
+          type: string
+          format: date-time
+        purgeAt:
+          type: string
+          format: date-time
+    BlockResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        documentId:
+          type: string
+          format: uuid
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+        type:
+          type: string
+          enum: [TEXT]
+        content:
+          type: object
+          additionalProperties: true
+        sortKey:
+          type: string
+        version:
+          type: integer
+        createdBy:
+          type: string
+          nullable: true
+        updatedBy:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+    CreateDocumentRequest:
+      type: object
+      required: [title]
+      properties:
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+        title:
+          type: string
+        icon:
+          type: object
+          nullable: true
+          additionalProperties: true
+        cover:
+          type: object
+          nullable: true
+          additionalProperties: true
+    UpdateDocumentRequest:
+      type: object
+      required: [title, version]
+      properties:
+        title:
+          type: string
+        icon:
+          type: object
+          nullable: true
+          additionalProperties: true
+        cover:
+          type: object
+          nullable: true
+          additionalProperties: true
+        version:
+          type: integer
+    UpdateDocumentVisibilityRequest:
+      type: object
+      required: [visibility, version]
+      properties:
+        visibility:
+          type: string
+          enum: [PUBLIC, PRIVATE]
+        version:
+          type: integer
+    MoveDocumentRequest:
+      type: object
+      properties:
+        targetParentId:
+          type: string
+          format: uuid
+          nullable: true
+        afterDocumentId:
+          type: string
+          format: uuid
+          nullable: true
+        beforeDocumentId:
+          type: string
+          format: uuid
+          nullable: true
+    DocumentTransactionRequest:
+      type: object
+      required: [clientId, batchId, operations]
+      properties:
+        clientId:
+          type: string
+        batchId:
+          type: string
+        operations:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentTransactionOperationRequest'
+    DocumentTransactionOperationRequest:
+      type: object
+      required: [opId, type]
+      properties:
+        opId:
+          type: string
+        type:
+          type: string
+          enum: [BLOCK_CREATE, BLOCK_REPLACE_CONTENT, BLOCK_MOVE, BLOCK_DELETE]
+        blockRef:
+          type: string
+          nullable: true
+        version:
+          type: integer
+          nullable: true
+        content:
+          type: object
+          nullable: true
+          additionalProperties: true
+        parentRef:
+          type: string
+          nullable: true
+        afterRef:
+          type: string
+          nullable: true
+        beforeRef:
+          type: string
+          nullable: true
+    DocumentTransactionResponse:
+      type: object
+      properties:
+        documentId:
+          type: string
+          format: uuid
+        documentVersion:
+          type: integer
+          nullable: true
+        batchId:
+          type: string
+        appliedOperations:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentTransactionAppliedOperationResponse'
+    DocumentTransactionAppliedOperationResponse:
+      type: object
+      properties:
+        opId:
+          type: string
+        status:
+          type: string
+          enum: [APPLIED, NO_OP]
+        tempId:
+          type: string
+          nullable: true
+        blockId:
+          type: string
+          format: uuid
+          nullable: true
+        version:
+          type: integer
+          nullable: true
+        sortKey:
+          type: string
+          nullable: true
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true

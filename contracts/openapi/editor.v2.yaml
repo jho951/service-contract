@@ -1,0 +1,95 @@
+openapi: 3.0.3
+info:
+  title: Editor Contract v2
+  version: 2.0.0
+  description: Future Node-based Editor contract sketch.
+servers:
+  - url: http://editor-service:8085
+paths:
+  /v2/editor/nodes:
+    post:
+      summary: Node 생성
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Created
+  /v2/editor/nodes/{nodeId}:
+    get:
+      summary: Node 단건 조회
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: nodeId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+    patch:
+      summary: Node 수정
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: nodeId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+    delete:
+      summary: Node 삭제
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: nodeId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: No Content
+  /v2/editor/nodes/{nodeId}/children:
+    get:
+      summary: 자식 Node 조회
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: nodeId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+  /v2/editor/nodes/{nodeId}/move:
+    post:
+      summary: Node 이동
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: nodeId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

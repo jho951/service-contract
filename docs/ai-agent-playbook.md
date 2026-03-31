@@ -11,6 +11,7 @@ AI 에이전트가 서비스 레포를 수정할 때, 계약 Source of Truth를 
 - 대상 서비스와 브랜치
   - Gateway: `Api-gateway-server` / `main`
   - Auth: `Auth-server` / `main`
+  - Authz: `Authz-server` / `main`
   - User: `User-server` / `main`
   - Redis: `Redis-server` / `main`
   - Block: `Block-server` / `dev`
@@ -18,18 +19,39 @@ AI 에이전트가 서비스 레포를 수정할 때, 계약 Source of Truth를 
   - Explain-page: `Explain-page` / `main`
 - 변경 유형: non-breaking 또는 breaking
 - 관련 계약 문서 경로
-  - `contracts/routing.md`
-  - `contracts/headers.md`
-  - `contracts/security.md`
-  - `contracts/errors.md`
-  - `contracts/env.md`
+  - `contracts/common/routing.md`
+  - `contracts/common/headers.md`
+  - `contracts/common/security.md`
+  - `contracts/auth/README.md`
+  - `contracts/auth/api.md`
+  - `contracts/auth/security.md`
+  - `contracts/auth/ops.md`
+  - `contracts/auth/errors.md`
+  - `contracts/permission/README.md`
+  - `contracts/permission/api.md`
+  - `contracts/permission/rbac.md`
+  - `contracts/permission/audit.md`
+  - `contracts/permission/security.md`
+  - `contracts/permission/ops.md`
+  - `contracts/permission/errors.md`
+  - `contracts/user/README.md`
+  - `contracts/user/api.md`
+  - `contracts/user/security.md`
+  - `contracts/user/ops.md`
+  - `contracts/user/errors.md`
+  - `contracts/redis/README.md`
+  - `contracts/redis/keys.md`
+  - `contracts/redis/security.md`
+  - `contracts/redis/ops.md`
+  - `contracts/gateway/errors.md`
+  - `contracts/common/env.md`
   - `contracts/openapi/*.yaml`
 
 ## 3) 표준 수행 절차
 1. 변경 요구를 계약 항목으로 분해한다.
 2. `contract` 레포를 먼저 수정한다.
 3. OpenAPI를 함께 갱신한다.
-4. `contracts/adoption-matrix.md` 상태를 업데이트한다.
+4. `contracts/common/adoption-matrix.md` 상태를 업데이트한다.
 5. 각 서비스 레포 구현을 계약과 동일하게 맞춘다.
 6. 서비스 레포마다 `CONTRACT_SYNC.md`를 최신 계약 SHA로 갱신한다.
 7. smoke test 또는 계약 테스트로 검증한다.
@@ -38,6 +60,7 @@ AI 에이전트가 서비스 레포를 수정할 때, 계약 Source of Truth를 
 ## 4) 서비스별 수정 책임
 - Gateway: 외부 `/v1/**` 경계, stripPrefix, trusted header 재주입, INTERNAL secret 검사
 - Auth: SSO/토큰 발급, gateway 전달 헤더/토큰 계약 수용
+- Authz: 권한 정책/역할 판정, 접근 제어 계약 수용
 - User: 사용자/소셜 링크 소유권, `/users/**`, `/internal/users/**` 계약 수용
 - Redis: 세션/캐시 저장 계층 운영 계약
 - Block(dev): 문서/블록 도메인 API 계약 수용

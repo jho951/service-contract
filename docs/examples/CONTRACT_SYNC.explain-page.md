@@ -11,11 +11,13 @@
 - Latest Sync Date: `<YYYY-MM-DD>`
 
 ## Referenced Contract Docs
-- `contracts/routing.md`
-- `contracts/headers.md`
-- `contracts/security.md`
-- `contracts/errors.md`
-- `contracts/env.md`
+- `contracts/common/routing.md`
+- `contracts/common/headers.md`
+- `contracts/common/security.md`
+- `contracts/auth/README.md`
+- `contracts/user/README.md`
+- `contracts/gateway/errors.md`
+- `contracts/common/env.md`
 - `contracts/openapi/gateway-edge.v1.yaml`
 - `contracts/openapi/user-service.v1.yaml`
 - `contracts/openapi/auth-service.v1.yaml`
@@ -26,6 +28,8 @@
   - `routing`
   - `headers`
   - `security`
+  - `auth`
+  - `user`
   - `errors`
   - `env`
   - `openapi`

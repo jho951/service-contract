@@ -8,50 +8,38 @@ MSA 간 인터페이스(라우트, 헤더, 보안, 에러, 환경변수, OpenAPI
 - 계약 드리프트 방지(개별 레포 문서와 실제 동작 불일치 최소화)
 
 ## 적용 대상
-### 백엔드 MSA 서비스
+### 백엔드 서비스
 - `Api-gateway-server` (main)
 - `Auth-server` (main)
+- `Authz-server` (main)
 - `User-server` (main)
 - `Redis-server` (main)
-- `Block-server` (dev)
+- `Block-server` (main)
 
-### 프론트엔드 계약 소비자
+### 프론트엔드 페이지
 - `Editor-page` (main)
 - `Explain-page` (main)
 
 ## 문서 인덱스
-- [서비스 소유권](contracts/service-ownership.md)
-- [라우팅 계약](contracts/routing.md)
-- [헤더 계약](contracts/headers.md)
-- [보안 계약](contracts/security.md)
-- [에러 계약](contracts/errors.md)
-- [환경변수 계약](contracts/env.md)
-- [버전 정책](contracts/versioning.md)
-- [변경 프로세스](contracts/change-process.md)
-- [도입 매트릭스](contracts/adoption-matrix.md)
-- [도입 플레이북](docs/adoption-playbook.md)
-- [AI Agent 플레이북](docs/ai-agent-playbook.md)
-- [계약 자동화](docs/contract-automation.md)
-- [CONTRACT_SYNC 예시 템플릿](docs/examples/contract-sync-template.md)
-- [README Contract Source 예시](docs/examples/readme-contract-source-frontend.md)
-- [Editor-page CONTRACT_SYNC 초안](docs/examples/CONTRACT_SYNC.editor-page.md)
-- [Explain-page CONTRACT_SYNC 초안](docs/examples/CONTRACT_SYNC.explain-page.md)
-- [OAuth2 소셜 프로비저닝 예시](docs/examples/user-social-provisioning.md)
-- OpenAPI
-  - `contracts/openapi/gateway-edge.v1.yaml`
-  - `contracts/openapi/user-service.v1.yaml`
-  - `contracts/openapi/auth-service.v1.yaml`
-  - `contracts/openapi/block-service.v1.yaml`
+- [Common](contracts/common/README.md)
+- [Auth](contracts/auth/README.md)
+- [Authz](contracts/authz/README.md)
+- [User](contracts/user/README.md)
+- [Redis](contracts/redis/README.md)
+- [Gateway](contracts/gateway/README.md)
+- [Editor](contracts/editor/README.md)
 
 ## 빠른 실행
 
 ```bash
 # 백엔드 서비스 레포 동기화 + 네트워크 준비
 ./scripts/msa-stack.sh init
-
+```
+```bash
 # 백엔드 MSA compose up
 ./scripts/msa-stack.sh up
-
+```
+```bash
 # 상태 확인
 ./scripts/msa-stack.sh ps
 ```
@@ -63,3 +51,8 @@ MSA 간 인터페이스(라우트, 헤더, 보안, 에러, 환경변수, OpenAPI
 2. 구현 변경보다 계약 변경 PR을 먼저 머지
 3. Gateway는 외부 계약(`/v1/**`)의 유일한 노출 지점
 4. 내부 서비스는 `/v1` 없는 내부 경로만 소유
+
+## Contract Sync
+- 이 레포의 동기화 기준 파일은 루트 [CONTRACT_SYNC.md](CONTRACT_SYNC.md) 이다.
+- 서비스 레포도 동일한 형식의 `CONTRACT_SYNC.md`를 유지한다.
+- 템플릿은 [docs/examples/contract-sync-template.md](docs/examples/contract-sync-template.md) 를 참고한다.

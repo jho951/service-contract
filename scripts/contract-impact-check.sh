@@ -13,7 +13,7 @@ SERVICE="${1:-}"
 BASE_REF="${2:-origin/main}"
 
 if [[ -z "$SERVICE" ]]; then
-  echo "Usage: $0 <gateway|auth|user|redis|block> [base_ref]" >&2
+  echo "Usage: $0 <gateway|auth|permission|user|redis|block> [base_ref]" >&2
   exit 2
 fi
 
@@ -57,6 +57,13 @@ detect_areas() {
       match_any 'exception|error|timeout|fallback' && areas+=("errors")
       match_any '\.env|application-.*\.yml|docker|compose|run\.docker\.sh' && areas+=("env")
       ;;
+    permission)
+      match_any 'src/.*/controller|/permission/|/permissions/|/roles/|/policies/' && areas+=("routing")
+      match_any 'src/.*/security|jwt|token|issuer|audience|role|permission|policy|authority|authz' && areas+=("security")
+      match_any 'src/.*/header|X-User-Id|X-Request-Id|X-Correlation-Id' && areas+=("headers")
+      match_any 'exception|error|timeout|fallback' && areas+=("errors")
+      match_any '\.env|application-.*\.yml|docker|compose|run\.docker\.sh' && areas+=("env")
+      ;;
     user)
       match_any 'src/.*/controller|/users/|/internal/users/' && areas+=("routing")
       match_any 'src/.*/security|jwt|internal.*secret|issuer|audience' && areas+=("security")
@@ -80,7 +87,7 @@ detect_areas() {
       ;;
     *)
       echo "[ERROR] Unknown service '$service'." >&2
-      echo "Use one of: gateway|auth|user|redis|block" >&2
+      echo "Use one of: gateway|auth|permission|user|redis|block" >&2
       exit 2
       ;;
   esac

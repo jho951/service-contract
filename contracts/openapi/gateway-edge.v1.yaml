@@ -6,6 +6,16 @@ info:
 servers:
   - url: http://gateway:8080
 paths:
+  /v1/health:
+    get:
+      summary: Gateway health endpoint
+      responses:
+        '200': { description: UP }
+  /v1/ready:
+    get:
+      summary: Gateway readiness endpoint
+      responses:
+        '200': { description: UP }
   /v1/users/signup:
     post:
       summary: PUBLIC route

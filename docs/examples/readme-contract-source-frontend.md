@@ -11,8 +11,10 @@ Use one of these blocks near the top of the frontend README files.
 - Branch: main
 
 ## Contract Scope
-- Document list, detail, edit, save, move, restore, trash
-- Block and document flows exposed through the gateway
+- Current v1 document and block flows
+- Document tree operations: list, detail, edit, save, move, restore, trash
+- Block content editing and ordering
+- Future Node migration is tracked separately in contract docs
 ```
 
 ## Explain-page

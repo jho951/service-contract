@@ -6,14 +6,7 @@
 
 ## 네트워크
 - `SHARED_SERVICE_NETWORK=service-backbone-shared`
-
-## Gateway
-### 필수(Required)
-- `AUTH_SERVICE_URL=http://auth-service:8081`
-- `USER_SERVICE_URL=http://user-service:8082`
-- `BLOCK_SERVICE_URL=http://documents-service:8083`
-- `REDIS_HOST=redis-server`
-- `REDIS_PORT=6379`
+- Gateway 전용 환경변수는 [contracts/gateway/env.md](../gateway/env.md)에서 관리한다.
 
 ## User Service
 ### 필수(Required)

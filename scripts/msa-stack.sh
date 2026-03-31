@@ -8,6 +8,7 @@ ACTION="${1:-up}"
 
 GATEWAY_REPO_URL="${GATEWAY_REPO_URL:-https://github.com/jho951/Api-gateway-server.git}"
 AUTH_REPO_URL="${AUTH_REPO_URL:-https://github.com/jho951/Auth-server.git}"
+PERMISSION_REPO_URL="${PERMISSION_REPO_URL:-https://github.com/jho951/Permission-server.git}"
 USER_REPO_URL="${USER_REPO_URL:-https://github.com/jho951/User-server.git}"
 REDIS_REPO_URL="${REDIS_REPO_URL:-https://github.com/jho951/Redis-server.git}"
 BLOCK_REPO_URL="${BLOCK_REPO_URL:-https://github.com/jho951/Block-server.git}"
@@ -15,6 +16,7 @@ BLOCK_REPO_URL="${BLOCK_REPO_URL:-https://github.com/jho951/Block-server.git}"
 REPOS=(
   "Api-gateway-server|$GATEWAY_REPO_URL|main"
   "Auth-server|$AUTH_REPO_URL|main"
+  "Permission-server|$PERMISSION_REPO_URL|main"
   "User-server|$USER_REPO_URL|main"
   "Redis-server|$REDIS_REPO_URL|main"
   "Block-server|$BLOCK_REPO_URL|dev"
@@ -57,6 +59,18 @@ connect_alias() {
   docker network connect --alias "$alias" "$SHARED_NETWORK" "$container" >/dev/null 2>&1 || true
 }
 
+wait_for_permission_service() {
+  for _ in $(seq 1 60); do
+    if curl -fsS http://127.0.0.1:8084/health >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 1
+  done
+
+  echo "[WARN] Permission-server did not become ready in time." >&2
+  return 1
+}
+
 up_stack() {
   prepare_repos
   ensure_network
@@ -75,6 +89,25 @@ up_stack() {
   )
 
   (
+    cd "$MSA_HOME/Permission-server"
+    if docker ps --format '{{.Names}}' | grep -qx "permission-service"; then
+      echo "[INFO] Permission-server container already running." >&2
+    else
+      docker rm -f permission-service >/dev/null 2>&1 || true
+      docker run -d \
+        --name permission-service \
+        --network "$SHARED_NETWORK" \
+        -p 8084:8084 \
+        -v "$MSA_HOME/Permission-server:/workspace" \
+        -w /workspace \
+        eclipse-temurin:17-jdk \
+        sh -lc './gradlew bootRun' >/dev/null
+    fi
+  )
+
+  wait_for_permission_service || true
+
+  (
     cd "$MSA_HOME/User-server"
     SHARED_SERVICE_NETWORK="$SHARED_NETWORK" ./scripts/run.docker.sh dev
   )
@@ -91,6 +124,8 @@ up_stack() {
 
   # Bridge services that do not join shared network by default.
   connect_alias "auth-service" "auth-service"
+  connect_alias "permission-service" "permission-service"
+  connect_alias "permission-server" "permission-service"
   connect_alias "user-server-dev" "user-service"
   connect_alias "documents-app-dev" "documents-service"
   connect_alias "central-redis" "redis-server"
@@ -112,13 +147,18 @@ down_stack() {
     cd "$MSA_HOME/Auth-server" 2>/dev/null && ./scripts/run.docker.sh down dev app || true
   )
   (
+    cd "$MSA_HOME/Permission-server" 2>/dev/null && {
+      docker rm -f permission-service >/dev/null 2>&1 || true
+    }
+  )
+  (
     cd "$MSA_HOME/Redis-server" 2>/dev/null && ./scripts/run.docker.sh down || true
   )
   echo "[OK] MSA stack down"
 }
 
 ps_stack() {
-  docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' | rg -n "gateway|auth|user|documents|redis" -N || true
+  docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' | rg -n "gateway|auth|permission|user|documents|redis" -N || true
 }
 
 case "$ACTION" in
