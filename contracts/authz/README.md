@@ -43,3 +43,4 @@
 | 판정 기준 | DB RBAC 매핑과 요청 메서드/경로 규칙 |
 | 신뢰 경계 | 외부 주입 trusted header는 Gateway 재주입 값만 신뢰한다. |
 | 공개 범위 | 권한을 프로필에 공개할지 여부는 user-service privacy/visibility 정책이 소유한다. |
+| admin IP guard | 관리자 접근 제한은 `ip-guard` 같은 외부 모듈과 함께 Gateway/Authz 경계에서 적용할 수 있다. |

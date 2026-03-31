@@ -26,11 +26,13 @@
 ## 추후 확장 서버 모듈
 | Module | Repo | Purpose |
 | --- | --- | --- |
+| `ip-guard` | `https://github.com/jho951/ip-guard` | 관리자 접근 제한, IP allow/deny, edge 보호 정책 |
 | `rate-limiter` | `https://github.com/jho951/rate-limiter` | 요청 제한, abuse 방지, 보호 정책 |
 | `feature-flag` | `https://github.com/jho951/feature-flag` | 기능 노출 제어, 점진 롤아웃, 실험 플래그 |
 | `policy-config` | `https://github.com/jho951/policy-config` | 정책 정의/배포/버전 관리 |
 
 ### 적용 방향
+- `ip-guard`는 Gateway와 Authz 경계에서 관리자 접근 제한 정책으로 적용한다.
 - `rate-limiter`는 Gateway 또는 Auth/Authz 경계에서 보호 정책과 함께 적용한다.
 - `feature-flag`는 프론트/백엔드의 점진 배포와 실험 플로우에 사용한다.
 - `policy-config`는 Authz 정책 모델, delegation, versioning과 결합해 운영한다.
@@ -41,6 +43,7 @@
 | UI 컴포넌트 구현 | `Ui-components-module` 또는 각 프론트엔드 레포 |
 | 인증/세션 | `auth` + `Auth-server` 계약 |
 | 감사 추적 | `audit-log` + 서비스 감사 계약 |
+| 관리자 접근 제한 | `ip-guard` + Gateway/Authz 정책 |
 | 요청 제한 | `rate-limiter` + Gateway/Authz 정책 |
 | 기능 노출 | `feature-flag` + 각 서비스/프론트 계약 |
 | 정책 정의 | `policy-config` + `contracts/authz/*` |
