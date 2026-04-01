@@ -17,12 +17,12 @@
 | --- | --- | --- |
 | `auth` | `https://github.com/jho951/auth` | 현재 적용 중인 인증/세션/JWT 발급 핵심 모듈 |
 | `audit-log` | `https://github.com/jho951/audit-log` | 모든 서비스 공통 감사 이벤트 모듈 |
-| `plugin-policy-engine` | `https://github.com/jho951/plugin-policy-engine` | Authz 정책 평가 엔진 모듈, resource/action/condition/effect 판정 |
+| `plugin-policy-engine` | `https://github.com/jho951/feature-flag.git` | Authz 정책 평가 엔진 모듈, resource/action/condition/effect 판정 |
 
 ### 현재 상태
 - `auth`는 현재 Auth-server에서 실제 인증 원천과 세션 발급 흐름에 사용한다.
 - `audit-log`는 Auth/Authz/User/Gateway/Editor/Block/Redis 전반의 감사 이벤트 추적과 증적에 사용한다.
-- `plugin-policy-engine`은 Maven Central에 publish된 상태이며, Authz-server의 현재 정책 평가 런타임으로 사용한다.
+- `plugin-policy-engine`은 Maven Central에 publish된 상태이며, 현재 Git 저장소는 `feature-flag.git`이다. Authz-server의 현재 정책 평가 런타임으로 사용한다.
 - 두 모듈은 현재 아키텍처의 필수 기반이며, contract 문서는 이들의 책임 경계를 서비스 계약과 함께 고정한다.
 
 ### 감사 이벤트 대상
@@ -38,10 +38,10 @@
 ## 추후 확장 서버 모듈
 | Module | Repo | Purpose |
 | --- | --- | --- |
-| `ip-guard` | `https://github.com/jho951/ip-guard` | 관리자 접근 제한, IP allow/deny, edge 보호 정책 |
-| `rate-limiter` | `https://github.com/jho951/rate-limiter` | 요청 제한, abuse 방지, 보호 정책 |
-| `feature-flag` | `https://github.com/jho951/feature-flag` | 기능 노출 제어, 점진 롤아웃, 실험 플래그 |
-| `policy-config` | `https://github.com/jho951/policy-config` | 정책 정의/배포/버전 관리 |
+| `ip-guard` | `https://github.com/jho951/ip-guard.git` | 관리자 접근 제한, IP allow/deny, edge 보호 정책 |
+| `rate-limiter` | `https://github.com/jho951/ratelimiter.git` | 요청 제한, abuse 방지, 보호 정책 |
+| `feature-flag` | `https://github.com/jho951/feature-flag.git` | 기능 노출 제어, 점진 롤아웃, 실험 플래그 |
+| `policy-config` | `https://github.com/jho951/policy-config.git` | 정책 정의/배포/버전 관리 |
 
 ### 적용 방향
 - `ip-guard`는 Gateway와 Authz 경계에서 관리자 접근 제한 정책으로 적용한다.
