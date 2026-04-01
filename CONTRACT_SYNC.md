@@ -155,6 +155,7 @@
   - `Authz introspection`
   - `Authz cache invalidation`
   - `Authz external boundaries`
+  - `Gateway admin IP guard`
   - `Redis key namespace and cache policy`
   - `Redis operational readiness`
   - `User signup and me`

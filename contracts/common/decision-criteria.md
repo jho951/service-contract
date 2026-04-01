@@ -28,5 +28,6 @@
 - `Authz`의 정책/위임/버전/캐시 경로
 - `User`의 공개 범위/visibility 경로
 - `Gateway`의 route protection 경로
+- 관리자 IP 차단은 `Gateway`가 1차로 처리하고, `Authz`는 관리자 권한/정책 결합을 담당한다.
 - `Editor`의 문서/블록 최종 집행 경로
 - 추후 확장 모듈(`ip-guard`, `rate-limiter`, `feature-flag`, `policy-config`)의 정책 경로
