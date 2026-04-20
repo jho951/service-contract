@@ -1,0 +1,178 @@
+contract:
+  repo: https://github.com/jho951/service-contract
+  lock: contract.lock.yml
+
+ci_profiles:
+  spring-boot: &ci_spring_boot
+    runtime: java
+    java_version: "17"
+    setup: gradle
+    test_command: ./gradlew clean test
+    build_command: ./gradlew bootJar
+    docker: true
+    contract_check: true
+  frontend: &ci_frontend
+    runtime: node
+    node_version: "20"
+    setup: npm
+    test_command: npm test -- --run
+    build_command: npm run build
+    docker: true
+    contract_check: true
+  infra: &ci_infra
+    runtime: docker
+    setup: compose
+    test_command: docker compose config
+    build_command: docker compose build
+    docker: true
+    contract_check: true
+  module: &ci_module
+    runtime: java
+    java_version: "17"
+    setup: gradle
+    test_command: ./gradlew clean test
+    build_command: ./gradlew build
+    docker: false
+    contract_check: true
+
+cd_profiles:
+  ec2-compose: &cd_ec2_compose
+    target: ec2
+    strategy: docker-compose
+    environments: [dev, prod]
+    image_registry: ghcr.io
+    deploy_on: protected_branch
+    health_check: true
+    smoke_test: true
+  frontend-static: &cd_frontend_static
+    target: static-hosting
+    strategy: build-artifact
+    environments: [dev, prod]
+    deploy_on: protected_branch
+    health_check: false
+    smoke_test: true
+  library-publish: &cd_library_publish
+    target: package-registry
+    strategy: publish-on-tag
+    environments: [release]
+    deploy_on: tag
+    health_check: false
+    smoke_test: false
+
+repositories:
+  - name: gateway-service
+    github: https://github.com/jho951/gateway-service
+    branch: main
+    contract: repositories/gateway-service
+    lock: contract.lock.yml
+    role: gateway
+    status: adopted
+    ci: *ci_spring_boot
+    cd:
+      <<: *cd_ec2_compose
+      port: 8080
+      health_path: /v1/health
+      ready_path: /v1/ready
+  - name: auth-service
+    github: https://github.com/jho951/auth-service
+    branch: main
+    contract: repositories/auth-service
+    lock: contract.lock.yml
+    role: backend-service
+    status: adopted
+    ci: *ci_spring_boot
+    cd:
+      <<: *cd_ec2_compose
+      port: 8081
+      health_path: /health
+      ready_path: /ready
+  - name: authz-service
+    github: https://github.com/jho951/authz-service
+    branch: main
+    contract: repositories/authz-service
+    lock: contract.lock.yml
+    role: backend-service
+    status: adopted
+    ci: *ci_spring_boot
+    cd:
+      <<: *cd_ec2_compose
+      port: 8084
+      health_path: /health
+      ready_path: /ready
+  - name: user-service
+    github: https://github.com/jho951/user-service
+    branch: main
+    contract: repositories/user-service
+    lock: contract.lock.yml
+    role: backend-service
+    status: adopted
+    ci: *ci_spring_boot
+    cd:
+      <<: *cd_ec2_compose
+      port: 8082
+      health_path: /health
+      ready_path: /ready
+  - name: editor-service
+    github: https://github.com/jho951/editor-service
+    branch: dev
+    contract: repositories/editor-service
+    lock: contract.lock.yml
+    role: backend-service
+    status: adopted
+    ci: *ci_spring_boot
+    cd:
+      <<: *cd_ec2_compose
+      port: 8083
+      health_path: /actuator/health
+      ready_path: /actuator/health/readiness
+  - name: redis-service
+    github: https://github.com/jho951/redis-service
+    branch: main
+    contract: repositories/redis-service
+    lock: contract.lock.yml
+    role: infra
+    status: adopted
+    ci: *ci_infra
+    cd:
+      <<: *cd_ec2_compose
+      port: 6379
+      health_path: redis-cli PING
+      ready_path: redis-cli PING
+  - name: monitoring-service
+    github: https://github.com/jho951/monitoring-service
+    branch: main
+    contract: repositories/monitoring-service
+    lock: contract.lock.yml
+    role: observability-runtime
+    status: adopted
+    ci: *ci_infra
+    cd:
+      <<: *cd_ec2_compose
+      port: 3000
+      health_path: /api/health
+      ready_path: /api/health
+  - name: audit-log
+    github: https://github.com/jho951/audit-log
+    branch: main
+    contract: shared/audit.md
+    lock: contract.lock.yml
+    role: module
+    status: adopted
+    ci: *ci_module
+    cd: *cd_library_publish
+  - name: editor-page
+    github: https://github.com/jho951/Editor-page
+    branch: master
+    lock: contract.lock.yml
+    role: frontend
+    status: adopted
+    ci: *ci_frontend
+    cd: *cd_frontend_static
+  - name: explain-page
+    github: https://github.com/jho951/Explain-page
+    branch: main
+    lock: contract.lock.yml
+    role: frontend
+    status: adopted
+    ci: *ci_frontend
+    cd: *cd_frontend_static
