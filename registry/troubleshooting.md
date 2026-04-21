@@ -749,6 +749,133 @@ git diff --check
 
 ## 최근 정합성 수정 기준
 
+### Compose / Local 실행 드리프트
+
+#### 0. `docker/*/compose.yml`의 기본 `env_file` 상대경로는 직접 `docker compose` 실행 시 깨질 수 있다
+##### 증상
+- `docker compose -f docker/compose.yml -f docker/dev/compose.yml up` 같은 직접 실행에서 `.env.dev` 또는 `.env.prod`를 못 찾는다.
+- `gateway-service`, `auth-service`는 즉시 실패하거나 필수 값이 비어 있는 상태로 뜬다.
+- `authz-service`는 컨테이너는 올라오지만 `.env` 값이 빠진 채로 실행된다.
+
+##### 원인
+- 아래 compose 파일들의 기본 `env_file`이 `../.env.dev`, `../.env.prod`처럼 잡혀 있다.
+- Compose는 경로를 compose 파일 기준으로 해석하므로 실제로는 `docker/.env.dev`, `docker/.env.prod`를 가리킨다.
+- 실제 파일은 서비스 루트의 `.env.dev`, `.env.prod`다.
+
+##### 확인
+- `gateway-service/docker/dev/compose.yml`
+- `gateway-service/docker/prod/compose.yml`
+- `auth-service/docker/dev/compose.yml`
+- `auth-service/docker/prod/compose.yml`
+- `authz-service/docker/dev/compose.yml`
+- `authz-service/docker/prod/compose.yml`
+- `gateway-service/scripts/run.docker.sh`
+- `auth-service/scripts/run.docker.sh`
+
+##### 조치
+1. 직접 compose를 실행할 때는 `GATEWAY_ENV_FILE`, `AUTH_ENV_FILE` 같은 override를 명시한다.
+2. compose 기본값은 `../../.env.dev`, `../../.env.prod`로 맞추는 편이 안전하다.
+3. 현재 스크립트 실행은 `*_ENV_FILE`을 정확한 절대/상대 경로로 넘기므로 대체로 정상이다.
+4. `authz-service`는 `required: false`라서 즉시 죽지 않을 뿐, 값이 빠진 채 떠 있을 수 있다는 점을 별도로 본다.
+
+#### 1. Gateway local과 auth-service local의 포트 기준이 서로 다르면 host bootRun이 바로 어긋난다
+##### 증상
+- Gateway local은 auth-service를 `localhost:8081`로 기대하는데 실제 auth-service local은 `8082`에서 뜬다.
+- auth-service local과 user-service local을 동시에 띄우면 둘 다 `8082`를 쓰려 해서 포트 충돌이 난다.
+
+##### 원인
+- `gateway-service/.env.local`은 `AUTH_SERVICE_URL=http://localhost:8081`를 사용한다.
+- `auth-service/.env.local`은 현재 `SERVER_PORT=8082`다.
+- `user-service/app/src/main/resources/application-dev.yml`의 기본 포트도 `8082`다.
+- 참고로 Gateway local에는 예전처럼 별도 `AUTH_VALIDATE_URL`이 있지 않고, validate 호출도 `AUTH_SERVICE_URL` 기준으로 파생된다.
+
+##### 확인
+- `repositories/gateway-service/env.md`
+- `repositories/auth-service/README.md`
+- `repositories/user-service/README.md`
+
+##### 조치
+1. host local 기준을 유지하려면 auth-service local 포트를 `8081`로 맞추는 편이 자연스럽다.
+2. 반대로 auth-service local을 `8082`로 유지할 거면 Gateway local `AUTH_SERVICE_URL`도 같이 바꿔야 한다.
+3. auth-service와 user-service를 동시에 host bootRun 할 때는 `8082` 중복 여부를 먼저 본다.
+
+#### 2. `auth-service/.env.local`의 `USER_SERVICE_BASE_URL=8083` 문제 제보는 현재 main 기준으로는 재현되지 않는다
+##### 증상
+- 과거 제보에는 auth-service local이 user-service를 `8083`으로 바라본다고 적혀 있었다.
+
+##### 원인
+- 현재 main 기준 `auth-service/.env.local`의 `USER_SERVICE_BASE_URL`은 이미 `http://localhost:8082`로 정리돼 있다.
+- 따라서 이 항목은 “현재 장애”가 아니라 “오래된 로컬 복사본 또는 다른 브랜치 drift” 가능성으로 봐야 한다.
+
+##### 확인
+- `auth-service/.env.local`
+- `user-service/app/src/main/resources/application-dev.yml`
+
+##### 조치
+1. 현재 main 기준 문서에는 이 항목을 활성 장애가 아니라 stale config 경고로 기록한다.
+2. 누군가 local에서 `8083`을 보고 있다면 오래된 `.env.local` 또는 다른 브랜치를 먼저 의심한다.
+
+#### 3. auth-service local과 user-service local의 내부 JWT shared secret이 다르면 내부 user lookup이 깨질 수 있다
+##### 증상
+- auth-service에서 user-service 내부 호출이 401/403으로 실패한다.
+- local에서는 로그인 또는 내부 계정 조회가 불안정하다.
+
+##### 원인
+- `auth-service/.env.local`의 `USER_SERVICE_JWT_SECRET`과 `user-service/.env.local`의 `USER_SERVICE_INTERNAL_JWT_SECRET`가 다르다.
+- auth-service는 이 secret으로 내부 JWT를 서명하고, user-service는 다른 secret으로 검증한다.
+
+##### 확인
+- `auth-service/.env.local`
+- `user-service/.env.local`
+- `shared/env.md`
+
+##### 조치
+1. 두 값을 반드시 같은 shared secret으로 맞춘다.
+2. local, Docker, 배포 예시 파일이 서로 다른 값을 갖고 있지 않은지 같이 확인한다.
+
+#### 4. auth-service MySQL init 스크립트는 prod에서 env와 명확히 어긋나고, dev에서도 env override를 따르지 않는다
+##### 증상
+- prod에서 auth-service가 기대하는 DB/user와 실제 init.sql이 만든 DB/user가 다를 수 있다.
+- dev에서 `.env.dev`를 바꿔도 MySQL 초기화는 계속 하드코딩 값으로 진행된다.
+
+##### 원인
+- `auth-service/.env.prod`와 런타임 예시는 `auth_service_db`, `auth_user`, `auth_password`를 기대한다.
+- 그런데 `auth-service/docker/prod/services/mysql/init.sql`은 `prod_db`, `readonly_user`, `strongpassword`를 생성한다.
+- `auth-service/docker/dev/services/mysql/init.sql`도 `auth_service_db`, `auth_user`, `auth_password`를 하드코딩해서 env 변경을 따라가지 않는다.
+
+##### 확인
+- `auth-service/.env.example`
+- `auth-service/docker/dev/services/mysql/init.sql`
+- `auth-service/docker/prod/services/mysql/init.sql`
+
+##### 조치
+1. 최소한 prod init.sql은 현재 env 계약과 같은 DB/user/password로 즉시 맞춘다.
+2. dev도 env override를 허용할지, init.sql 하드코딩을 계약으로 굳힐지 하나로 정한다.
+3. 더 나은 방향은 init.sql 의존을 줄이고 MySQL image env와 마이그레이션 체계로 일원화하는 것이다.
+
+#### 5. auth-service local의 `SSO_GITHUB_CALLBACK_URI=http://localhost:8082/login/oauth2/code/github`는 현재 즉시 장애라기보다 혼란을 만드는 drift다
+##### 증상
+- local SSO를 볼 때 어떤 문서는 Gateway callback을 말하고, 어떤 env는 auth-service 직결 callback을 말해 혼란이 생긴다.
+- `redirect_uri` mismatch를 디버깅할 때 실제 활성 경로와 env 값이 달라 보인다.
+
+##### 원인
+- 현재 auth-service dev Spring OAuth2 설정은 `redirect-uri: "{baseUrl}/v1/login/oauth2/code/{registrationId}"`를 사용한다.
+- 프런트도 `GET /v1/auth/sso/start`처럼 Gateway 공개 경로를 기준으로 로그인 시작을 만든다.
+- 반면 `auth-service/.env.local`의 `SSO_GITHUB_CALLBACK_URI=http://localhost:8082/login/oauth2/code/github`는 Gateway ingress 모델과 맞지 않는다.
+- 추가로 현재 코드 기준 `SSO_GITHUB_CALLBACK_URI`는 `sso.github.callback-uri`로 로드되지만, active Spring OAuth2 login redirect 계산에는 직접 쓰이지 않는다.
+
+##### 확인
+- `auth-service/.env.local`
+- `auth-service/app/src/main/resources/dev/application-dev_auth.yml`
+- `auth-service/app/src/main/resources/dev/application-dev_sso.yml`
+- `repositories/auth-service/README.md`
+- `repositories/gateway-service/auth-flow.md`
+
+##### 조치
+1. 이것은 현재 즉시 부팅 장애는 아니다.
+2. 다만 현재 MSA ingress 계약이 Gateway-first라면 local 문서와 예시도 `http://localhost:8080/v1/login/oauth2/code/github` 또는 `http://127.0.0.1:8080/v1/login/oauth2/code/github` 기준으로 맞추는 편이 덜 헷갈린다.
+3. auth-service 직결 모델을 유지할 거면, 그 경로가 “standalone auth-service debug 전용”이라는 점을 문서에 분리해 적는다.
+
 ### 1. Gateway 로컬 JWT 검증과 auth-service 서명키가 다르면 보호 경로가 불안정해진다
 #### 증상
 - `Bearer` 토큰이 있는데도 Gateway가 보호 경로를 401로 거부한다.
@@ -846,3 +973,201 @@ git diff --check
 #### 조치
 1. 최신 기준 authz-service dev compose에는 Redis가 없어야 한다.
 2. 공용 Redis는 `redis-service`의 `central-redis` 하나만 사용한다.
+
+### 7. `GET /v1/auth/sso/start`는 파라미터 없이 호출하면 `400 / 9015 INVALID_REQUEST`로 실패한다
+#### 증상
+- `GET /v1/auth/sso/start` 호출 직후 `잘못된 요청입니다.`, `code=9015`가 반환된다.
+- Gateway까지는 붙지만 provider redirect로 넘어가지 못한다.
+
+#### 원인
+- 현재 auth-service 구현은 `page`와 `redirect_uri`가 둘 다 비어 있으면 SSO 시작 요청을 거부한다.
+- 허용 `page` 값도 `explain`, `editor`, `admin`처럼 제한돼 있다.
+- 일부 contract/README 예시는 여전히 파라미터 없는 `GET /v1/auth/sso/start`를 보여 주므로 구현과 문서가 어긋날 수 있다.
+
+#### 확인
+- `repositories/auth-service/README.md`
+- `repositories/editor-page/README.md`
+- `repositories/explain-page/README.md`
+- `repositories/gateway-service/auth-flow.md`
+
+#### 조치
+1. editor는 `GET /v1/auth/sso/start?page=editor`를 쓴다.
+2. explain은 `GET /v1/auth/sso/start?page=explain`를 쓴다.
+3. admin은 `GET /v1/auth/sso/start?page=admin`를 쓴다.
+4. `redirect_uri`를 직접 넘길 때는 auth-service 허용 목록과 완전히 같은 값만 사용한다.
+5. contract 예시가 파라미터 없는 호출을 보여 주면 stale example로 보고 수정한다.
+
+### 8. GitHub OAuth는 `localhost`와 `127.0.0.1`을 같은 redirect URI로 보지 않는다
+#### 증상
+- GitHub authorize 이후 `Be careful! The redirect_uri is not associated with this application.`가 나온다.
+- 로그인은 시작되는데 callback 단계에서 provider가 막는다.
+- 같은 로컬 머신인데도 어떤 브라우저 탭은 되고 어떤 탭은 안 된다.
+
+#### 원인
+- GitHub OAuth App callback URL은 호스트까지 완전히 일치해야 한다.
+- `http://localhost:8080/v1/login/oauth2/code/github`와 `http://127.0.0.1:8080/v1/login/oauth2/code/github`는 서로 다른 URI다.
+- 브라우저 접속 host와 GitHub App 설정 host를 섞으면 provider mismatch와 cookie scope 혼선이 같이 난다.
+
+#### 확인
+- `repositories/auth-service/README.md`
+- `repositories/gateway-service/auth-flow.md`
+- `shared/env.md`
+
+#### 조치
+1. 로컬 기준 host를 하나만 고른다.
+2. `127.0.0.1`로 통일할 경우 브라우저, 프런트 env, auth-service 허용 redirect, GitHub OAuth App callback URL을 모두 `127.0.0.1`로 맞춘다.
+3. `localhost`로 통일할 경우도 같은 원칙으로 전부 `localhost`만 사용한다.
+4. `localhost:3000`, `127.0.0.1:3000`, `localhost:8080`, `127.0.0.1:8080`를 섞어 쓰지 않는다.
+
+### 9. Explain-page와 Editor-page는 각자 자기 `page`와 callback으로 로그인 시작을 고정해야 한다
+#### 증상
+- Explain-page에서 로그인했는데 editor 쪽으로 보내진다.
+- callback 이후 원래 프런트가 아니라 다른 프런트로 복귀한다.
+- `/v1/auth/me?page=explain`처럼 auth 확인 쿼리를 바꿔도 로그인 목적지가 바뀌지 않는다.
+
+#### 원인
+- 로그인 목적지는 `/v1/auth/sso/start` 시점의 `page`와 `redirect_uri`로 결정된다.
+- `/v1/auth/me`의 `page=...` 쿼리는 세션 확인용 보조 정보일 뿐, 이미 만들어진 SSO 목적지를 바꾸지 않는다.
+- 프런트가 editor용 `page=editor` 또는 editor callback URL을 재사용하면 explain 로그인도 editor로 귀결된다.
+
+#### 확인
+- `repositories/editor-page/README.md`
+- `repositories/explain-page/README.md`
+- `repositories/gateway-service/auth-flow.md`
+
+#### 조치
+1. Editor-page 로그인 시작은 `page=editor`와 editor callback URL을 사용한다.
+2. Explain-page 로그인 시작은 `page=explain`와 explain callback URL을 사용한다.
+3. 두 프런트 모두 local에서 host 통일 원칙을 따라 `127.0.0.1` 또는 `localhost` 중 하나만 쓴다.
+4. callback 이후 잘못된 프런트로 돌아간다면 `/v1/auth/sso/start` 호출 시점의 `page`, `redirect_uri`, `next`를 먼저 본다.
+
+### 10. 브라우저 `OPTIONS /v1/auth/me`가 `403`이면 먼저 Gateway CORS preflight를 본다
+#### 증상
+- 브라우저 DevTools에서 `OPTIONS http://127.0.0.1:8080/v1/auth/me?page=explain`가 `403 Forbidden`이다.
+- 실제 `GET /v1/auth/me`는 날아가지도 못한다.
+- 응답에 `Access-Control-Allow-Origin`, `Access-Control-Allow-Credentials`가 없거나 부족하다.
+
+#### 원인
+- Gateway가 브라우저 preflight를 프레임워크 레벨에서 먼저 허용하지 못한다.
+- 허용 origin 목록과 실제 프런트 origin이 다르다.
+- `credentials: include`를 쓰는데 CORS 응답 헤더가 그것과 맞지 않는다.
+
+#### 확인
+- `repositories/gateway-service/auth.md`
+- `repositories/gateway-service/auth-flow.md`
+- `shared/security.md`
+
+#### 조치
+1. 브라우저 origin과 Gateway CORS 허용 origin을 정확히 맞춘다.
+2. `OPTIONS` 응답에 `Access-Control-Allow-Origin`, `Access-Control-Allow-Credentials`, `Access-Control-Allow-Methods`, `Access-Control-Allow-Headers`가 모두 있는지 본다.
+3. 로컬 기준 origin이 `http://127.0.0.1:3000`이면 Gateway도 그 값을 명시적으로 허용해야 한다.
+
+### 11. 쿠키가 있는데도 `GET /v1/auth/me`가 `401 authentication required`면 Gateway/Auth의 세션 판정 순서를 같이 본다
+#### 증상
+- 브라우저 요청 헤더에 `sso_session`, `ACCESS_TOKEN`, `refresh_token`, `JSESSIONID`가 있는데도 `GET /v1/auth/me`가 `401`이다.
+- Redis에는 `auth:session:<sessionId>`가 남아 있는데 auth 확인 API는 계속 실패한다.
+- direct auth-service 호출 `/auth/session`, `/auth/internal/session/validate`도 같은 `security.auth.required`를 반환한다.
+
+#### 원인
+- 웹 요청에서 `sso_session`보다 `ACCESS_TOKEN`이 먼저 선택되면 브라우저 세션 흐름이 JWT 검증 흐름으로 잘못 들어갈 수 있다.
+- auth-service의 세션 validate 엔드포인트가 쿠키 기반 세션을 복원하지 못하면 Gateway가 연쇄적으로 401을 낸다.
+- 따라서 “쿠키가 있다”와 “Gateway가 세션을 복원했다”는 같은 뜻이 아니다.
+
+#### 확인
+- `repositories/gateway-service/auth.md`
+- `repositories/gateway-service/auth-flow.md`
+- `repositories/auth-service/README.md`
+- `repositories/redis-service/README.md`
+
+#### 조치
+1. 브라우저 요청에 실제 `Cookie` 헤더가 붙는지 먼저 확인한다.
+2. Redis에 `auth:session:<sso_session>`가 존재하는지 본다.
+3. auth-service `/auth/session`과 `/auth/internal/session/validate`를 직접 호출해도 401인지 확인한다.
+4. Gateway는 브라우저 채널에서 `sso_session`을 우선 사용하도록 유지한다.
+5. auth-service 세션 validate가 불안정할 때는 Gateway가 Redis SSO session 또는 access-token claims로 fallback 할 수 있는지 함께 본다.
+
+### 12. `authz-service` prod compose는 base 서비스를 override해야지 다른 서비스를 추가하면 안 된다
+#### 증상
+- `docker compose -f docker/compose.yml -f docker/prod/compose.yml config --services`에서 `authz-service` 외에 `permission-service`가 보인다.
+- prod compose validation이 실패하거나 base 서비스와 prod 서비스가 따로 합쳐진다.
+
+#### 원인
+- base compose 서비스 이름은 `authz-service`인데 prod override 파일이 다른 이름을 쓰면 override가 아니라 신규 서비스 추가가 된다.
+
+#### 확인
+- `repositories/authz-service/README.md`
+- `repositories/authz-service/ops.md`
+
+#### 조치
+1. `docker/prod/compose.yml`의 서비스 이름은 base compose와 같은 `authz-service`를 사용한다.
+2. prod 파일에는 override에 필요한 값만 추가하고, build context/image/네트워크의 기본 뼈대는 base compose를 그대로 상속한다.
+
+### 13. auth-service prod Docker 경로는 run script가 `.env.prod`를 compose interpolation에 올리지 않으면 바로 깨진다
+#### 증상
+- `./scripts/run.docker.sh up prod`가 compose interpolation 단계에서 `AUTH_SERVICE_HOST_BIND is required` 같은 오류로 실패한다.
+- `.env.prod`가 있어도 required 값이 비어 있는 것처럼 보인다.
+
+#### 원인
+- compose interpolation은 `env_file:`이 아니라 shell env 또는 `docker compose --env-file` 기준으로 처리된다.
+- prod compose가 `AUTH_SERVICE_HOST_BIND`를 required로 요구하는데, run script가 `.env.prod`를 interpolation용으로 올리지 않으면 compose 단계에서 먼저 실패한다.
+
+#### 확인
+- `repositories/auth-service/README.md`
+- `repositories/auth-service/ops.md`
+
+#### 조치
+1. run script는 `docker compose --env-file "$PROJECT_ROOT/.env.prod"` 또는 동등한 방식으로 `.env.prod`를 interpolation에 올린다.
+2. `.env.prod`에는 `AUTH_SERVICE_HOST_BIND` 같은 required 값을 실제로 넣는다.
+3. prod compose의 기본 `env_file` 상대경로도 서비스 루트 `.env.prod`를 가리키게 맞춘다.
+
+### 14. editor-service prod Docker 경로는 env 파일과 GitHub Packages secret이 둘 다 준비돼야 한다
+#### 증상
+- `./scripts/run.docker.sh up prod`가 `EDITOR_SERVICE_HOST_BIND is required` 또는 `JWT_SECRET is required`에서 실패한다.
+- clean machine에서 prod build가 private package download 단계에서 실패한다.
+
+#### 원인
+- prod compose는 required interpolation 값과 `JWT_SECRET`를 요구한다.
+- Dockerfile은 GitHub Packages 인증을 `gh_token`, `github_actor` secret mount로 기대한다.
+- run script가 `.env.prod` 또는 대체 env 파일을 compose interpolation에 올리지 않거나, prod compose build에 secrets를 안 넘기면 둘 중 하나에서 막힌다.
+
+#### 확인
+- `repositories/editor-service/README.md`
+- `repositories/editor-service/ops.md`
+
+#### 조치
+1. run script는 `.env.prod`가 있으면 그것을, 없으면 최소한 `.env.example` 같은 대체 env를 `--env-file`로 읽을 수 있어야 한다.
+2. prod compose build에도 `gh_token`, `github_actor` secret을 전달한다.
+3. prod에서 required로 쓰는 `EDITOR_SERVICE_HOST_BIND`, `JWT_SECRET`는 추적 가능한 예시 파일 또는 배포 secret 관리 기준에 반드시 포함한다.
+
+### 15. redis prod는 password 정책을 정하지 않고 빈 값으로 두면 compose 단계에서 멈춘다
+#### 증상
+- `redis-service` prod compose가 시작도 못 하고 `REDIS_PASSWORD is required`로 실패한다.
+
+#### 원인
+- prod compose는 Redis server와 exporter 모두 `REDIS_PASSWORD`를 required로 요구한다.
+- `env.docker.prod`가 빈 값을 제공하면 run script가 그 값을 그대로 interpolation에 넣는다.
+
+#### 확인
+- `repositories/redis-service/README.md`
+- `repositories/redis-service/ops.md`
+
+#### 조치
+1. prod env 파일에는 비어 있지 않은 `REDIS_PASSWORD`를 넣는다.
+2. 만약 비밀번호 없는 private network Redis를 의도한다면, compose required 제약과 exporter 설정도 그 정책에 맞게 같이 바꾼다.
+
+### 16. editor-service 런타임 정체성 문제를 다시 제보받으면 먼저 stale branch인지 확인한다
+#### 증상
+- 누군가 editor-service가 아직 `documents-app` 이름으로 돈다고 보고한다.
+- JWT issuer/audience, audit service name, monitoring label이 모두 `documents-app`이라고 주장한다.
+
+#### 원인
+- 과거 브랜치나 압축본 기준 제보일 수 있다.
+- 현재 main 기준 런타임 정체성이 이미 `editor-service`로 정리돼 있으면, 남은 문제는 다른 브랜치 또는 오래된 산출물일 가능성이 크다.
+
+#### 확인
+- `repositories/editor-service/README.md`
+- `repositories/editor-service/ops.md`
+
+#### 조치
+1. 먼저 현재 main의 `application.yml`, `application-auth.yml`, `application-prod.yml`에서 `spring.application.name`, issuer, audience, audit service name을 다시 본다.
+2. main이 이미 `editor-service`로 정렬돼 있으면 stale branch 보고로 분류하고, 실제 운영 산출물이 어디서 빌드됐는지부터 확인한다.
