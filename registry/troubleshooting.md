@@ -744,3 +744,105 @@ git diff --check
 - [Automation](automation.md)
 - [Contract Lock Template](../templates/contract-lock-template.yml)
 - [Agent Task Template](../templates/agent-task-template.md)
+
+---
+
+## 최근 정합성 수정 기준
+
+### 1. Gateway 로컬 JWT 검증과 auth-service 서명키가 다르면 보호 경로가 불안정해진다
+#### 증상
+- `Bearer` 토큰이 있는데도 Gateway가 보호 경로를 401로 거부한다.
+- 같은 토큰이 auth-service에서는 유효한데 Gateway에서만 실패한다.
+
+#### 원인
+- `AUTH_JWT_VERIFY_ENABLED=true` 상태에서 Gateway `AUTH_JWT_SHARED_SECRET`와 auth-service `AUTH_JWT_SECRET`가 다르다.
+
+#### 확인
+- `repositories/gateway-service/auth.md`
+- `repositories/auth-service/ops.md`
+
+#### 조치
+1. Gateway의 `AUTH_JWT_SHARED_SECRET`를 auth-service `AUTH_JWT_SECRET`와 동일하게 맞춘다.
+2. HS256 검증을 유지할지, auth-service validate 호출만 사용할지 운영 모드를 고정한다.
+
+### 2. GitHub OAuth callback은 Gateway public callback으로 고정해야 한다
+#### 증상
+- GitHub OAuth authorize까지는 가지만 callback 단계에서 `redirect_uri is not associated` 오류가 난다.
+
+#### 원인
+- provider 등록값이 upstream `/login/oauth2/code/github`를 바라보거나, host는 맞아도 public `/v1/login/oauth2/code/github`를 쓰지 않는다.
+
+#### 확인
+- `repositories/auth-service/api.md`
+- `artifacts/openapi/auth-service.upstream.v1.yaml`
+- `artifacts/openapi/gateway-service.public.v1.yaml`
+
+#### 조치
+1. GitHub OAuth App callback은 항상 Gateway public callback으로 등록한다.
+2. 기준 경로는 `https://<gateway-domain>/v1/login/oauth2/code/github`다.
+3. auth-service upstream callback `/login/oauth2/code/github`는 외부 provider에 직접 등록하지 않는다.
+
+### 3. auth-service 예시 파일과 로컬 런타임 값도 실제 Docker topology와 같아야 한다
+#### 증상
+- `.env.example`만 복사해서 띄우면 Redis DNS를 못 찾는다.
+- IntelliJ local bootRun에서 user lookup이 다른 서비스 포트로 간다.
+
+#### 원인
+- Redis host가 `central-redis`가 아닌 다른 이름으로 남아 있다.
+- local `USER_SERVICE_BASE_URL`이 실제 user-service 포트 `8082`와 다르다.
+
+#### 확인
+- `repositories/auth-service/README.md`
+- `repositories/user-service/README.md`
+
+#### 조치
+1. auth-service 예시 Redis host는 `central-redis`로 유지한다.
+2. local `USER_SERVICE_BASE_URL`은 `http://localhost:8082` 기준으로 맞춘다.
+
+### 4. Monitoring은 dev와 prod target 파일을 분리해야 한다
+#### 증상
+- local Docker에서는 Prometheus가 target을 못 긁거나 전부 `unknown`으로 남는다.
+- 운영 대시보드 label과 local label이 섞여 서비스가 분산된다.
+
+#### 원인
+- EC2 내부 DNS target을 local Docker dev compose에 그대로 사용한다.
+- `permission-service`, `gateway` 같은 옛 runtime name이 target/label에 남아 있다.
+
+#### 확인
+- `repositories/monitoring-service/targets.md`
+- `repositories/monitoring-service/ops.md`
+
+#### 조치
+1. dev는 Docker service name(`auth-service`, `user-service`, `editor-service`, `authz-service`, `gateway-service`)을 사용한다.
+2. prod는 EC2 internal hostname target을 유지한다.
+3. gateway/authz service label은 `gateway-service`, `authz-service`로 통일한다.
+
+### 5. Gateway platform-security 모듈 버전은 같은 minor로 맞춘다
+#### 증상
+- 빌드는 되거나 안 되거나 환경마다 달라지고, runtime linkage 문제가 날 수 있다.
+
+#### 원인
+- `platform-security-bom` 버전과 직접 pin한 `platform-security-core` 버전이 다르다.
+
+#### 확인
+- `repositories/gateway-service/README.md`
+- `repositories/gateway-service/security.md`
+
+#### 조치
+1. `platform-security-core`는 BOM과 같은 minor 버전으로 맞춘다.
+2. 개별 모듈을 직접 pin할 때는 starter/core/web/bridge family를 같이 검토한다.
+
+### 6. authz-service dev compose에 Redis가 내장돼 있으면 branch drift를 의심한다
+#### 증상
+- authz dev stack과 redis-service dev stack을 같이 올릴 때 `6379` 충돌 또는 `central-redis` alias 충돌이 난다.
+
+#### 원인
+- 최신 main이 아니라 과거 branch에서 authz-service dev compose가 Redis를 함께 띄우는 경우가 있다.
+
+#### 확인
+- `repositories/authz-service/ops.md`
+- `repositories/redis-service/README.md`
+
+#### 조치
+1. 최신 기준 authz-service dev compose에는 Redis가 없어야 한다.
+2. 공용 Redis는 `redis-service`의 `central-redis` 하나만 사용한다.
