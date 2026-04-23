@@ -58,8 +58,10 @@ Explain-page
   -> Gateway/Auth OAuth
   -> /auth/callback
   -> POST /v1/auth/exchange
-  -> GET /v1/auth/me
-  -> 필요 시 POST /v1/auth/refresh
+  -> GET /v1/auth/session
+  -> redirect
+  -> app bootstrap에서 GET /v1/auth/me
+  -> 필요 시 POST /v1/auth/refresh 후 GET /v1/auth/session 또는 /v1/auth/me 재시도
   -> POST /v1/auth/logout
 ```
 
@@ -94,7 +96,7 @@ Explain-page
 - explain-page 기본 포트는 `3000`이다.
 - Gateway 기본 포트는 `8080`이다.
 - `NEXT_PUBLIC_GATEWAY_BASE_URL`에 `/v1`가 이미 붙어 있어도 코드는 중복 추가를 피한다.
-- callback 이후 `ticket -> /v1/auth/exchange -> /v1/auth/me` 순서로 세션을 확정한다.
+- callback 이후 `ticket -> /v1/auth/exchange -> /v1/auth/session -> redirect` 순서로 세션을 확정한다.
 
 ## 자주 틀리는 설정
 ### 1. path 상수에 `/v1`를 다시 넣는 경우

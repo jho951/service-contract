@@ -2,7 +2,7 @@
 
 ## Startup / Runtime
 - user-service는 공개 사용자 가입과 내부 사용자 연동의 기준 서비스다.
-- `users/me` 는 Gateway 재주입 또는 JWT 인증이 함께 동작해야 한다.
+- `users/me` 는 Gateway 재주입 또는 Gateway 내부 JWT 인증이 함께 동작해야 한다.
 - 내부 API는 `GatewayUserPrincipal` 또는 내부 JWT 컨텍스트를 신뢰한다.
 - 공개 API는 기능 플래그로 꺼질 수 있다.
 
@@ -30,4 +30,4 @@
 
 ## Notes
 - 공개 API는 Gateway 경유를 기본으로 한다.
-- 내부 사용자 식별은 `X-User-Id`와 내부 JWT를 기준으로 한다.
+- 내부 사용자 식별은 `X-User-Id`와 `issuer=api-gateway`, `audience=internal-services` 내부 JWT를 기준으로 한다.

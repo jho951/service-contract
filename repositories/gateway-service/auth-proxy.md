@@ -39,8 +39,8 @@ Public `/v2/auth/*` routes follow the same ownership model when enabled: Gateway
 
 ## 채널별 인증 수단
 ### `web`
-- `ACCESS_TOKEN` 쿠키를 먼저 본다.
-- 없으면 `sso_session` 쿠키로 auth-service 세션 검증을 수행한다.
+- `sso_session` 쿠키가 있으면 세션 검증 경로를 우선 사용한다.
+- `sso_session`이 없고 `ACCESS_TOKEN` 쿠키가 있으면 JWT 검증 경로를 사용한다.
 - 브라우저 요청에서 `Authorization`이 함께 와도 Cookie 계열이 우선이다.
 
 ### `native` / `cli` / `api`
@@ -50,7 +50,7 @@ Public `/v2/auth/*` routes follow the same ownership model when enabled: Gateway
 
 ## 내부 정규화
 - 성공하면 `X-User-Id`, `X-User-Status`, `X-Client-Type`를 재주입한다.
-- 성공하면 내부 JWT를 `Authorization`으로 다시 넣는다.
+- 성공하면 `iss=api-gateway`, `aud=internal-services` 계약의 내부 JWT를 `Authorization`으로 다시 넣는다.
 - 외부 `Authorization`은 제거한다.
 - `ADMIN` 라우트의 최종 허용 여부는 Authz 판정 결과를 따른다.
 - Authz에는 `X-User-Id`, `X-Session-Id`, `X-Original-Method`, `X-Original-Path`, `X-Request-Id`, `X-Correlation-Id`를 전달한다.

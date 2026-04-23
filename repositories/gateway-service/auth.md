@@ -26,8 +26,8 @@
 
 ## 검증
 ### Cookie 경로
-- `ACCESS_TOKEN`이 있으면 JWT 경로로 검증한다.
-- `ACCESS_TOKEN`이 없으면 `sso_session` 쿠키를 auth-service에 검증 요청한다.
+- `sso_session`이 있으면 auth-service 세션 검증 경로를 우선 사용한다.
+- `sso_session`이 없고 `ACCESS_TOKEN`이 있으면 JWT 경로로 검증한다.
 
 ### Bearer 경로
 - `GATEWAY_JWT_PRECHECK_*` 설정에 따라 얕은 선검증을 먼저 한다.
@@ -38,7 +38,7 @@
 ## 인증 성공 결과
 - `X-User-Id`를 내부 컨텍스트로 정규화한다.
 - `X-User-Status`를 함께 정규화한다.
-- 내부 JWT를 `Authorization`으로 다시 넣는다.
+- `iss=api-gateway`, `aud=internal-services` 계약의 내부 JWT를 `Authorization`으로 다시 넣는다.
 - 내부 서비스는 Gateway 재주입 값만 신뢰한다.
 
 ## 관리자 경로

@@ -44,5 +44,6 @@
 | 실제 노출 API | 이 문서는 Authz MVP의 실제 노출 API를 기록한다. |
 | 판정 원칙 | 관리자 권한 판정은 deny-by-default이며 `X-User-Id` 기준 role/permission 조회와 method/path 규칙으로 결정한다. |
 | 신뢰하지 않는 입력 | `X-User-Role`은 필수 입력이 아니며 allow/deny 판정에 사용하지 않는다. |
+| 내부 JWT 용도 | Authz가 받는 `internal-service-jwt`는 일반 보호 서비스용 `aud=internal-services` 토큰이 아니라, `aud=authz-service` caller proof 토큰이다. |
 | readiness | `GET /ready`는 Redis 장애 시 `DOWN`을 반환할 수 있다. |
 | OpenAPI | 기계 판독 계약은 [authz-service.upstream.v1.yaml](../../artifacts/openapi/authz-service.upstream.v1.yaml)에 둔다. |

@@ -4,6 +4,7 @@
 - 외부 클라이언트는 Gateway를 통해 관리자 경로에 접근하는 것을 기본으로 한다.
 - 내부 판정 API는 Gateway 또는 신뢰 가능한 내부 caller만 사용한다.
 - 내부 caller proof는 `Authorization: Bearer <internal-service-jwt>` 또는 `X-Internal-Request-Secret`로 검증한다.
+- 이 `internal-service-jwt`는 일반 보호 서비스 전파용 `aud=internal-services` 토큰과 별개이며, `aud=authz-service` caller proof 토큰으로 취급한다.
 - 외부에서 주입된 `X-User-Id`, `X-Original-Method`, `X-Original-Path`는 Gateway 재주입 규칙 없이 직접 신뢰하지 않는다.
 - `X-User-Role`은 신뢰하지 않으며 Authz allow/deny 판정 입력으로 사용하지 않는다.
 - IP guard는 authz-service 책임이 아니다. 관리자/internal route IP guard는 Gateway에서 수행한다.

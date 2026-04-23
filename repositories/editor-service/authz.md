@@ -10,6 +10,7 @@ Editor 서버의 권한 규칙은 `createdBy` 기반 소유권과 Gateway가 주
 - Editor 서버는 외부에서 직접 들어오는 `Authorization`, `Cookie`, `X-User-Id`를 신뢰하지 않는다.
 - Editor 서버는 Gateway가 정규화한 내부 요청만 처리한다.
 - 현재 v1에서 신뢰 가능한 핵심 헤더는 `X-User-Id`, `X-Request-Id`다.
+- Gateway는 인증 성공 후 내부 `Authorization` JWT도 다시 주입하며, Editor 서버는 이 내부 JWT 계약을 기준으로 인증 컨텍스트를 검증한다.
 - `X-User-Role`은 신뢰하지 않으며 권한 판정 입력으로 사용하지 않는다.
 - 프로필에서 보이는 권한 배지는 실행 가능 여부를 대신하지 않는다.
 

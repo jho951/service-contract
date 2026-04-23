@@ -6,8 +6,10 @@
 - 외부에서 주입된 `X-User-Id`는 신뢰하지 않는다.
 
 ## Authentication
-- `GET /users/me` 는 JWT 또는 Gateway 재주입 사용자 컨텍스트를 사용한다.
+- `GET /users/me` 는 Gateway가 재주입한 내부 JWT 또는 사용자 컨텍스트를 사용한다.
 - 내부 사용자 조회/수정 API는 Gateway가 재주입한 사용자 식별 정보를 기준으로 접근한다.
+- 내부 JWT 기본 계약은 `issuer=api-gateway`, `audience=internal-services`다.
+- `authz-service` caller proof 용 `aud=authz-service` 토큰은 user-service 인증 토큰으로 사용하지 않는다.
 
 ## Authorization
 - 공개 회원가입은 인증 없이도 호출 가능하다.
