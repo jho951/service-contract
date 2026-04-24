@@ -129,6 +129,8 @@ services:
     restart: unless-stopped
     env_file:
       - ./.env.backend
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
     depends_on:
       mysql:
         condition: service_healthy
