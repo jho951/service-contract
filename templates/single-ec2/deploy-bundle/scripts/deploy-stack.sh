@@ -33,6 +33,16 @@ frontend() {
   docker compose --env-file "$FRONTEND_ENV" -f "$FRONTEND_COMPOSE" "$@"
 }
 
+backend_up_with_retry() {
+  if backend up -d; then
+    return 0
+  fi
+
+  echo "Backend deploy failed once; waiting for dependency recovery and retrying..." >&2
+  sleep 15
+  backend up -d
+}
+
 ensure_file "$BACKEND_ENV"
 ensure_file "$FRONTEND_ENV"
 ensure_network
@@ -40,7 +50,7 @@ ensure_network
 case "$ACTION" in
   up)
     backend pull
-    backend up -d
+    backend_up_with_retry
     frontend pull
     frontend up -d
     ;;
@@ -50,7 +60,7 @@ case "$ACTION" in
     ;;
   restart)
     backend pull
-    backend up -d
+    backend_up_with_retry
     frontend pull
     frontend up -d
     ;;
