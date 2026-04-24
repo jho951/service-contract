@@ -249,7 +249,7 @@ EXPLAIN_PAGE_PROD_PORT=3000
 NEXT_PUBLIC_GATEWAY_BASE_URL=https://api.myeditor.n-e.kr
 NEXT_PUBLIC_SSO_BASE_URL=https://api.myeditor.n-e.kr
 NEXT_PUBLIC_START_FRONTEND_URL=https://editor.myeditor.n-e.kr
-NEXT_PUBLIC_SSO_CONSUMER_CALLBACK_URL=https://myeditor.n-e.kr/auth/callback
+NEXT_PUBLIC_SSO_CONSUMER_CALLBACK_URL=https://editor.myeditor.n-e.kr/auth/callback
 ```
 
 운영 배포 파일:
