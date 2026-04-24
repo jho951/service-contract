@@ -23,6 +23,11 @@
 - [Cache Contract](cache.md)
 - [Common Audit Contract](../../shared/audit.md)
 
+## 운영 배포 자산
+
+- EC2 image-only 배포 기준 산출물은 구현 repo의 `deploy/ec2/` 아래에 둔다.
+- 기본 파일은 `docker-compose.yml`, `.env.production.example`, `README.md`다.
+
 ## 현재 확장
 - [V2 Extension](v2-extension.md)
 

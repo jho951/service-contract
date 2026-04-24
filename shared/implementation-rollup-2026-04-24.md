@@ -112,7 +112,53 @@
 - [templates/github-actions-contract-check.yml](../templates/github-actions-contract-check.yml): ECR login 예시로 변경
 - [registry/repositories.yml](../registry/repositories.yml): 기본 CD profile의 image registry를 ECR로 정리
 
-## 5. 남은 운영 작업
+## 5. Repo별 `deploy/ec2` bundle 정리
+
+실제 구현 repo에는 EC2에 source를 clone하지 않고도 배포할 수 있도록 `deploy/ec2` 산출물을 두는 방향으로 정리했다.
+
+대상:
+
+- `auth-service`
+- `authz-service`
+- `editor-service`
+- `gateway-service`
+- `monitoring-service`
+- `redis-service`
+- `user-service`
+- `editor-page`
+- `explain-page`
+
+기본 bundle 구성:
+
+- `docker-compose.yml`
+- `.env.production.example`
+- 필요 시 `nginx/*.conf.example`
+- `README.md`
+
+추가 메모:
+
+- `auth-service`와 `user-service`는 MySQL 보조 설정 파일까지 bundle에 포함한다.
+- `editor-page`, `explain-page`, `gateway-service`는 host Nginx reverse proxy 기준 example을 함께 둔다.
+- `monitoring-service`는 Grafana 노출이 필요한 경우를 대비해 host Nginx example을 함께 둔다.
+- `redis-service`, `monitoring-service`, `editor-page`, `explain-page`의 CD workflow는 가능하면 `deploy/ec2/docker-compose.yml` 기준 validation으로 맞춘다.
+
+## 6. Editor-page 최근 UI/UX 및 품질 게이트 정리
+
+`editor-page` 실제 구현에는 아래 변경이 함께 반영됐다.
+
+- 커스텀 `context menu`, `confirm`, `toast` host 도입
+- 블록 편집기 좌측 rail SVG 아이콘화와 context menu 정리
+- `Cmd/Ctrl + S` 제거, 텍스트 입력 중 `Cmd/Ctrl + A` native select-all 유지
+- 홈/휴지통 목록 상단을 공용 `DocumentsPageHeader`로 통합
+- 홈/휴지통 목록의 카드/리스트 토글을 공통 디자인으로 정리
+- 휴지통 목록에서 우클릭 기반 `복구`, `완전 삭제` 처리
+- LNB 우클릭 중심 조작과 drag-and-drop 이동 추가
+- 모바일에서 로고 기반 전체 화면 LNB overlay 도입
+- `not-found`를 explain-page 스타일 404로 정리
+- 품질 게이트 기준으로는 `eslint.config.js`, `.eslintignore`, `npm run lint`, `npm run typecheck`가 현재 존재한다.
+- 반면 Husky pre-commit hook과 `lint-staged`는 아직 구현 repo에 없다.
+
+## 7. 남은 운영 작업
 
 구현은 끝났고 실제 배포 전에는 아래만 채우면 된다.
 

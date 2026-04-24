@@ -37,6 +37,11 @@
 - [Error Contract](errors.md)
 - [Authz Upstream OpenAPI v1](../../artifacts/openapi/authz-service.upstream.v1.yaml)
 
+## 운영 배포 자산
+
+- EC2 image-only 배포 기준 산출물은 구현 repo의 `deploy/ec2/` 아래에 둔다.
+- 기본 파일은 `docker-compose.yml`, `.env.production.example`, `README.md`다.
+
 ## API
 | Method | Path | Purpose |
 | --- | --- | --- |

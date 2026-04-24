@@ -65,3 +65,8 @@ Gateway는 외부 public API의 진입점이다. Public route versioning, 인증
 - [Common Security](../../shared/security.md)
 - [Common Audit](../../shared/audit.md)
 - [Gateway Public OpenAPI](../../artifacts/openapi/gateway-service.public.v1.yaml)
+
+## 운영 배포 자산
+
+- EC2 image-only 배포 기준 산출물은 구현 repo의 `deploy/ec2/` 아래에 둔다.
+- 기본 파일은 `docker-compose.yml`, `.env.production.example`, `README.md`이고, host Nginx reverse proxy example을 함께 둔다.

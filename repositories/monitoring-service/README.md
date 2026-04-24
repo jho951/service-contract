@@ -46,3 +46,9 @@
 - dev Grafana는 `auth-private`, `user-private`, `documents-private`, `authz-private` 네트워크에도 붙어 각 서비스의 private MySQL에 직접 접근할 수 있다.
 - dev Grafana datasource provisioning은 `docker/dev/grafana/provisioning/datasources/prometheus.yml`, `docker/dev/grafana/provisioning/datasources/mysql.yml`을 사용하며, MySQL datasource는 Auth/User/Editor/Authz 네 개를 기본 등록한다.
 - target file과 관련 런타임 이름 사이에는 `gateway-service`, `documents-service`, `redis-server`, `central-redis-exporter(-dev)`, `monitoring-server` 같은 이름이 함께 쓰일 수 있다.
+
+## 운영 배포 자산
+
+- EC2 image-only 배포 기준 산출물은 구현 repo의 `deploy/ec2/` 아래에 둔다.
+- 기본 파일은 `docker-compose.yml`, `.env.production.example`, `README.md`다.
+- Grafana를 외부에 제한적으로 노출할 필요가 있으면 host Nginx example을 함께 둔다.

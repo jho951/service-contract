@@ -17,6 +17,18 @@
 - 브라우저는 backend 개별 서비스가 아니라 Gateway만 호출한다.
 - 현재 v1에는 문서 복제 UI와 복제 API 소비가 없다. 문서 복제는 FE/BE 모두 v2 범위로 올린다.
 
+## 운영 배포 자산
+
+- EC2 image-only 배포 기준 산출물은 구현 repo의 `deploy/ec2/` 아래에 둔다.
+- 기본 파일은 `docker-compose.yml`, `.env.production.example`, `README.md`이고, host Nginx reverse proxy example을 함께 둔다.
+
+## 최근 구현 메모
+
+- 홈/휴지통 목록 상단은 공용 `DocumentsPageHeader`로 통합됐다.
+- 모바일에서는 로고를 메뉴 트리거로 쓰고, LNB는 전체 화면 overlay로 열린다.
+- 홈/휴지통/LNB/블록 편집기는 context menu 중심 조작을 사용한다.
+- 휴지통 상세 라우트 대신 목록 우클릭 기반 복구/완전 삭제 UX를 사용한다.
+
 ## URL 조립 규칙
 Editor-page는 base URL과 endpoint를 아래처럼 조합한다.
 
@@ -100,6 +112,12 @@ Editor-page
 - 개발 서버 문서에는 Vite proxy가 `/v1/**`와 legacy `/auth/**`를 backend로 전달한다고 적혀 있다.
 - callback URL은 `VITE_SITE_URL` 기준 `/auth/callback`으로 만든다.
 
+## 개발 품질 게이트
+- 현재 구현 repo root에는 `eslint.config.js`와 `.eslintignore`가 있다.
+- `package.json`에는 `npm run lint`와 `npm run typecheck` script가 있다.
+- `npm run build`는 `npm run typecheck && vite build` 순서로 실행된다.
+- 현재 구현 기준으로 `.husky/`, `prepare` script, `lint-staged` 설정은 없다.
+
 ## 자주 틀리는 설정
 ### 1. base URL에 `/v1`를 넣는 경우
 잘못된 예:
@@ -151,3 +169,5 @@ endpoint=/v1/auth/me
 - contract drift를 검사하는 CI workflow가 없다.
 - gateway public contract를 소비하지만, 이를 잠그는 machine-readable artifact pin이 없다.
 - branch 실사용은 작업 브랜치 중심이지만, 계약 문서는 기본 브랜치 `master`를 source of truth로 적는다.
+- commit 전 `lint` 또는 `typecheck`를 강제하는 Husky git hook이 없다.
+- staged file 단위 lint gate를 위한 `lint-staged` 설정이 없다.

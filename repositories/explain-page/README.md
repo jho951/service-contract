@@ -16,6 +16,12 @@
 - 최종 URL 조립 시 `base=/v1` + `path=/auth/**` 조합으로 Gateway public auth API를 호출한다.
 - fetch 호출은 `credentials: "include"`를 사용한다.
 
+## 운영 배포 자산
+
+- EC2 image-only 배포 기준 산출물은 구현 repo의 `deploy/ec2/` 아래에 둔다.
+- 기본 파일은 `docker-compose.yml`, `.env.production.example`, `README.md`이고, host Nginx reverse proxy example을 함께 둔다.
+- 현재 운영 bundle은 nginx 컨테이너 대신 host Nginx가 `127.0.0.1:3000` 앱 포트를 프록시하는 구성을 기본으로 둔다.
+
 ## URL 조립 규칙
 Explain-page는 base URL과 path를 아래처럼 조합한다.
 

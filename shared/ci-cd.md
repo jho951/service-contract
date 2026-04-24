@@ -36,3 +36,11 @@ repo별 차이는 [registry/repositories.yml](../registry/repositories.yml)의 `
 - `latest` 태그는 `main` 또는 `master`에서만 추가 발행하고, deploy 대상 태그로 직접 사용하지 않는다.
 - EC2 또는 원격 Docker host는 CI가 만든 이미지를 `docker compose pull && docker compose up -d`로만 반영한다.
 - private repository 접근 토큰과 key는 CI 서버 또는 로컬 build 환경에만 두고, production runtime에는 주입하지 않는다.
+- image-only EC2 배포를 쓰는 repo는 저장소 안에 `deploy/ec2` 산출물을 둔다.
+- `deploy/ec2`에는 최소한 아래 파일을 둔다.
+  - `docker-compose.yml`
+  - `.env.production.example`
+  - 필요 시 host Nginx example
+  - 간단한 `README.md`
+- CD workflow의 compose validation은 가능하면 실제 운영 실행 파일인 `deploy/ec2/docker-compose.yml`을 기준으로 수행한다.
+- frontend page와 gateway는 운영에서 host Nginx reverse proxy를 기본으로 하고, 앱 컨테이너는 `127.0.0.1` bind를 기본값으로 둔다.
