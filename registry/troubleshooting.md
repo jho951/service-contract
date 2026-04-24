@@ -2027,3 +2027,133 @@ git diff --check
 1. `authz-service` compose에 `PLATFORM_SECURITY_SERVICE_ROLE_PRESET=INTERNAL_SERVICE`를 명시한다.
 2. 현재 이미지 기준으로는 `AUTHZ_PLATFORM_SECURITY_RATE_LIMIT_ENABLED=false`, `PLATFORM_GOVERNANCE_AUDIT_SERVICE_NAME=authz-service`도 같이 명시한다.
 3. editor도 `EDITOR_PLATFORM_*` 전용 값으로 다시 고정해서 공용 env 누수를 줄인다.
+
+### 50. `Contract Lock`가 `Verify consumed contract paths`에서 바로 죽으면 `contract.lock.yml`가 현재 contract tree에 없는 경로를 가리킨다
+
+#### 증상
+- `CI`가 테스트나 빌드 전에 `Contract Lock` job에서 바로 실패한다.
+- 로그 마지막이 `Verify consumed contract paths` 또는 `Process completed with exit code 1`에서 끝난다.
+- 예시는 `service-auth`처럼 `artifacts/openapi/auth-public.gateway.v1.yaml` 같이 현재 `service-contract`에 없는 경로를 `consumes`에 남겨둔 경우다.
+
+#### 원인
+- `contract.lock.yml`의 `consumes` 목록이 예전 contract 구조를 그대로 참조한다.
+- workflow는 `.contract/<path>` 존재 여부만 검증하므로, 경로 하나만 stale이어도 서비스 코드와 무관하게 바로 실패한다.
+
+#### 확인
+- 서비스 repo의 `contract.lock.yml`
+- `service-contract`의 실제 파일 트리
+- GitHub Actions `Contract Lock` 로그
+
+#### 조치
+1. `contract.lock.yml`의 `consumes`에서 현재 없는 경로를 제거하거나 실제 파일명으로 바꾼다.
+2. 경로가 맞다면 `service-contract` 쪽 아티팩트/문서를 복구한다.
+3. `contract_lock` 검증 자체를 더 이상 운영하지 않기로 했다면, workflow의 해당 job과 step을 함께 제거한다.
+
+### 51. workflow가 prod compose 필수 env를 인라인으로 들고 있으면 `... is required`류 에러가 계속 재발한다
+
+#### 증상
+- `error while interpolating ...: required variable ... is missing a value`
+- 최근 확인된 예시는 다음과 같다.
+- `service-user`: `USER_SERVICE_IMAGE is required`
+- `service-monitoring`: `PROMETHEUS_IMAGE is required`
+- `service-editor`: `PLATFORM_SECURITY_JWT_SECRET is required`
+- `service-gateway`: `GATEWAY_INTERNAL_JWT_SHARED_SECRET is required`
+
+#### 원인
+- `docker/prod/compose.yml`의 `${VAR:? ... is required}` 목록과 `.github/workflows/ci.yml`, `.github/workflows/cd.yml`의 인라인 env가 수동으로 따로 관리된다.
+- compose에 필수 변수를 하나 추가해도 workflow 쪽이 같이 수정되지 않으면 dev는 지나가고 prod validation에서만 뒤늦게 터진다.
+
+#### 확인
+- `docker/prod/compose.yml`
+- `.github/workflows/ci.yml`, `.github/workflows/cd.yml`의 `COMPOSE_CONFIG_COMMAND`
+- 최신 실패 로그의 `required variable ... is missing a value`
+
+#### 조치
+1. 인라인 env를 없애고 repo에 체크인된 `.env.ci.dev`, `.env.ci.prod` 같은 파일로 모은다.
+2. `docker/prod/compose.yml`의 required var 목록과 `.env.ci.prod` 키를 비교하는 검증 스크립트를 추가한다.
+3. `CI`와 `CD`는 둘 다 같은 compose validation 스크립트만 호출하게 맞춘다.
+
+### 52. `editor-service`의 `documents-boot:test`가 `ServiceLoaderUtils` `ClassNotFoundException`으로 깨지면 Spring Boot plugin version과 BOM이 어긋난 상태다
+
+#### 증상
+- `:documents-boot:test`가 실패한다.
+- 테스트 리포트 또는 XML에 `org.junit.platform.commons.util.ServiceLoaderUtils` `ClassNotFoundException`이 찍힌다.
+- `JUnitException`, `NoClassDefFoundError`, `Could not execute test class`가 연쇄로 보인다.
+
+#### 원인
+- `settings.gradle`의 `org.springframework.boot` plugin 기본 버전과 루트 `build.gradle`의 Spring Boot BOM 기본 버전이 다르다.
+- 실제 사례는 plugin `3.4.10`, BOM `3.5.13`이 섞이면서 JUnit Platform `1.11.x`와 `1.12.x`가 함께 풀린 경우였다.
+
+#### 확인
+- `settings.gradle`
+- 루트 `build.gradle`
+- `./gradlew :documents-boot:dependencyInsight --dependency junit-platform-commons --configuration testRuntimeClasspath`
+
+#### 조치
+1. `settings.gradle`의 Spring Boot plugin 버전을 루트 BOM 버전과 동일하게 맞춘다.
+2. 다시 `./gradlew --no-daemon clean test`로 전체 테스트를 확인한다.
+3. JUnit/JUnit Platform 버전을 별도로 override한다면 plugin/BOM과 함께 맞물려 있는지 같이 본다.
+
+### 53. `editor-service`는 테스트와 compose validation이 통과해도 Docker image build에서 `Problems reading data from Binary store`로 다시 죽을 수 있다
+
+#### 증상
+- `CI`의 `Image` job만 실패한다.
+- Docker build 로그에 `Could not resolve all dependencies for configuration ':documents-boot:runtimeClasspath'`
+- 이어서 `Problems reading data from Binary store in /root/.gradle/.tmp/...`가 나온다.
+
+#### 원인
+- Docker build 안에서 실행하는 Gradle `bootJar` 단계가 깨진 binary store 또는 비정상적인 dependency resolution 상태를 물고 있을 수 있다.
+- 호스트에서 `clean test`가 통과해도 이미지 빌드 레이어의 Gradle 상태는 별개라서 다시 터질 수 있다.
+
+#### 확인
+- `CI`의 `Image -> Build Docker image` 로그
+- `docker/Dockerfile`의 Gradle 실행 줄
+- 로컬 `docker build` 재현 여부
+
+#### 조치
+1. Docker build 안의 Gradle 실행은 `--no-daemon`과 별도 `GRADLE_USER_HOME`를 주는 쪽으로 격리한다.
+2. dependency download layer와 `bootJar` layer를 분리해 재현성을 높인다.
+3. 필요하면 builder stage에서 `.gradle/.tmp`를 새로 만들도록 정리한다.
+
+### 54. `authz-service`가 host Gradle에선 되는데 Docker image build에서만 `Could not find io.github.jho951.platform:*`로 깨지면 builder가 GitHub Packages를 못 읽고 있다
+
+#### 증상
+- `CI`의 `Image` job에서만 실패한다.
+- 로그에 `Could not find io.github.jho951.platform:platform-security-starter:.`
+- 같은 식으로 `platform-security-adapter-ratelimiter`, `audit-log-api` 등 여러 의존성을 못 찾는다.
+
+#### 원인
+- Docker build 안의 Gradle builder가 GitHub Packages 인증값 또는 BOM 해상도에 필요한 환경을 제대로 못 받는다.
+- 로컬/host Gradle과 Docker builder의 repository credential 조건이 다르면 새 의존성을 추가한 뒤 image build에서만 깨진다.
+
+#### 확인
+- `CI`의 `Image -> Build Docker image` 로그
+- `docker/Dockerfile`
+- `build.gradle`의 GitHub Packages repository credential 설정
+
+#### 조치
+1. Docker build에 `GITHUB_ACTOR`, `GITHUB_TOKEN` 또는 동등한 secret mount가 실제로 전달되는지 본다.
+2. builder stage 안의 Gradle이 host와 같은 repository 설정을 읽는지 확인한다.
+3. 새 platform 모듈을 추가했다면 image build까지 포함해 다시 검증한다.
+
+### 55. 서비스 repo CD가 `/opt/deploy`에서 `./scripts/deploy-stack.sh up` 전체 stack을 호출하면 unrelated 서비스 때문에 배포가 실패할 수 있다
+
+#### 증상
+- `service-auth` CD가 `editor-service-prod` 컨테이너 이름 충돌 때문에 실패한다.
+- `service-user` 또는 `service-editor` CD가 `user-mysql` unhealthy 때문에 실패한다.
+- `service-monitoring` CD가 `No such container` 또는 stale container 충돌로 실패한다.
+- 배포하려던 서비스 자체 이미지는 정상 pull됐는데, 전혀 다른 서비스 recreate 중에 job이 죽는다.
+
+#### 원인
+- 각 서비스 repo는 자기 이미지 하나만 바꾸면 되는데, 원격 deploy step이 `./scripts/deploy-stack.sh up`으로 backend 전체를 다시 올린다.
+- single-EC2 host에 남아 있는 orphan/stale container, unhealthy DB, 이름 충돌이 모두 같은 job으로 섞여 들어온다.
+
+#### 확인
+- 각 서비스 repo의 `.github/workflows/cd.yml`
+- `Deploy to EC2` 로그에서 pull/recreate 되는 서비스 목록
+- `/opt/deploy/scripts/deploy-stack.sh`
+
+#### 조치
+1. 서비스 repo CD는 `./scripts/deploy-stack.sh up <service-name>` 형태의 단건 배포만 하게 바꾼다.
+2. `monitoring-service`처럼 여러 compose service가 한 repo에 있으면 `prometheus grafana loki promtail`처럼 필요한 대상만 명시한다.
+3. 전체 stack 재기동은 bootstrap/수동 운영 작업으로만 분리한다.
