@@ -12,7 +12,7 @@
 - immutable deploy tag: `${GITHUB_SHA}`
 - floating tag: `latest`는 `main` 또는 `master`에서만 추가 발행
 - 운영 compose: `build:` 대신 `image:` 사용
-- 운영 반영 방식: `docker compose pull && docker compose up -d`
+- 운영 반영 방식: 전체 초기 기동은 `docker compose pull && docker compose up -d`, 서비스 단건 반영은 대상 서비스만 `pull/up -d`
 
 ## 2. Build/Run 분리
 
@@ -76,6 +76,7 @@
 
 - prod compose를 `REDIS_IMAGE` 기반 image-only로 전환
 - exporter 이미지를 `REDIS_EXPORTER_IMAGE`로 외부 제어 가능하게 정리
+- 단일 EC2 deploy bundle에서도 MySQL/redis-exporter 같은 서드파티 이미지를 env override로 바꿔 mirror 가능하게 정리
 - CD workflow를 Amazon ECR push 기준으로 전환
 - `contract.lock.yml`의 image registry를 ECR로 수정
 

@@ -12,7 +12,7 @@
 | [full-stack.user-data.vars.example.env](full-stack.user-data.vars.example.env) | 완성형 user data 렌더링용 실제 vars 파일 형식 예시 |
 | [docker-compose.single-ec2.service.override.yml](docker-compose.single-ec2.service.override.yml) | backend service용 shared network/restart 정책 템플릿 |
 | [docker-compose.single-ec2.gateway-public.override.yml](docker-compose.single-ec2.gateway-public.override.yml) | gateway 외부 공개용 override 템플릿 |
-| [docker-compose.single-ec2.redis-alias.override.yml](docker-compose.single-ec2.redis-alias.override.yml) | Redis canonical alias와 legacy alias를 같이 주는 override 템플릿 |
+| [docker-compose.single-ec2.redis-alias.override.yml](docker-compose.single-ec2.redis-alias.override.yml) | Redis shared-network alias를 `redis`로 고정하는 override 템플릿 |
 | [deploy-bundle/](deploy-bundle/) | 앱 레포 clone 없이 `compose + env + nginx`만으로 단일 EC2를 올리는 self-contained 배포 번들 |
 | [nginx.single-ec2.conf.example](nginx.single-ec2.conf.example) | `api`, `editor`, `explain`, `grafana` 도메인을 내부 포트로 라우팅하는 Nginx 예시 |
 | [env/](env/) | 서비스별 `.env.prod` 예시 템플릿 |
@@ -28,10 +28,11 @@
 5. 수동 모드에서는 각 서비스 repo `.env.prod`를 준비하고 ECR image URI를 채운다.
 6. `scripts/deploy-single-ec2-service.sh` 또는 `scripts/deploy-single-ec2-stack.sh`로 실행한다.
 7. `service-backbone-shared` network에 모든 서비스를 붙인다.
-8. `redis -> auth -> user -> authz -> editor -> gateway` 순으로 이미지를 pull한 뒤 실행한다.
-9. 외부 공개는 `nginx.single-ec2.conf.example` 또는 [../../shared/single-ec2-edge-routing.md](../../shared/single-ec2-edge-routing.md) 기준으로 Nginx에 붙인다.
-10. 현재 `full-stack user_data`와 배포 스크립트는 backend 7개를 기본 자동화 범위로 보고, `editor-page`, `explain-page`, Nginx는 후속 단계에서 별도로 반영한다.
-11. 앱 레포를 EC2에 clone하지 않으려면 `deploy-bundle/README.md`의 bundle 방식을 우선 사용한다.
+8. 전체 초기 기동은 `redis -> auth -> user -> authz -> editor -> gateway` 순으로 이미지를 pull한 뒤 실행한다.
+9. 운영 중 단일 서비스 반영은 `scripts/deploy-single-ec2-service.sh <service-name> <repo-dir> up`처럼 대상 서비스만 갱신한다.
+10. 외부 공개는 `nginx.single-ec2.conf.example` 또는 [../../shared/single-ec2-edge-routing.md](../../shared/single-ec2-edge-routing.md) 기준으로 Nginx에 붙인다.
+11. 현재 `full-stack user_data`와 배포 스크립트는 backend 7개를 기본 자동화 범위로 보고, `editor-page`, `explain-page`, Nginx는 후속 단계에서 별도로 반영한다.
+12. 앱 레포를 EC2에 clone하지 않으려면 `deploy-bundle/README.md`의 bundle 방식을 우선 사용한다.
 
 ## 실제 실행
 
@@ -68,7 +69,7 @@ EC2가 뜨자마자 7개 서비스까지 자동으로 올리려면 [user_data.fu
 2. contract repo clone
 3. 7개 서비스 runtime repo clone
 4. base64로 전달된 `.env.prod` 파일 생성
-5. `docker compose pull && up -d` 기반 `deploy-single-ec2-stack.sh up` 실행
+5. 서비스별 `pull/up`를 순서대로 수행하는 `deploy-single-ec2-stack.sh up` 실행
 
 변수 형식은 [user_data.full-stack.vars.example.md](user_data.full-stack.vars.example.md)를 따른다.
 
@@ -129,6 +130,7 @@ docker compose \
 
 - 실제 compose service key가 repo마다 다를 수 있으므로 `<service-name>` placeholder는 각 repo의 canonical service key로 치환한다.
 - 운영 배포에서는 source build를 하지 않고, `.env.prod`에 채운 ECR image URI만 pull한다.
+- `mysql`, `redis_exporter` 같은 서드파티 운영 이미지는 env 변수로 override 가능하게 두고, 운영에서는 가능하면 ECR mirror를 권장한다.
 - gateway만 host port를 외부에 publish한다.
 - backend service와 Redis는 host publish 없이 Docker network alias로만 통신하는 것을 기본값으로 둔다.
 - concrete 실행은 `overrides/`와 `scripts/`를 우선 사용하고, generic override는 참고용으로만 둔다.

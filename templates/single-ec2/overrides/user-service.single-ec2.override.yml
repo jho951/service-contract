@@ -1,10 +1,11 @@
 services:
+  # Base repo service key remains `mysql`; the canonical private host is `user-mysql`.
   mysql:
     restart: unless-stopped
     networks:
       user-private:
         aliases:
-          - mysql
+          - user-mysql
 
   user-service:
     restart: unless-stopped

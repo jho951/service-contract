@@ -9,7 +9,7 @@
 | Loki | host `3100 -> 3100` |
 | Promtail | host log 수집 agent, public inbound 없음 |
 
-- dev Grafana는 `monitoring-private` 외에 `auth-private`, `user-private`, `documents-private`, `authz-private` 네트워크에도 붙는다.
+- dev Grafana는 `monitoring-private` 외에 `auth-private`, `user-private`, `editor-private`, `authz-private` 네트워크에도 붙는다.
 - dev Grafana datasource provisioning은 Prometheus 1개와 MySQL 4개(Auth/User/Editor/Authz)를 기본 적재한다.
 
 ## Operational Responsibilities

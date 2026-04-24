@@ -23,12 +23,12 @@
 | `auth-service` | `auth-service` | container `8081`, local JVM `8081` | `/health`, `/ready` |
 | `authz-service` | `authz-service` | `8084` | `/health`, `/ready` |
 | `user-service` | `user-service` | `8082` | `/health`, `/ready` |
-| `editor-service` | service key `editor-service`, shared alias `documents-service` | `8083` | `/actuator/health`, `/actuator/health/readiness` |
-| `redis-service` | `redis-server` with alias `central-redis` | `6379` | `redis-cli PING` |
+| `editor-service` | service key `editor-service`, DB host `editor-mysql` | `8083` | `/actuator/health`, `/actuator/health/readiness` |
+| `redis-service` | `redis-server` with shared alias `redis` | `6379` | `redis-cli PING` |
 | `monitoring-service` | project `monitoring-server` | Grafana host default `3005` | Grafana `/api/health`, Prometheus `/-/ready` |
 
 - 구현 레포 기준으로 보면 repo 이름과 runtime host가 항상 같지는 않다.
-- current gateway의 canonical editor upstream env는 `EDITOR_SERVICE_URL=http://editor-service:8083`이고, `BLOCK_SERVICE_URL`은 legacy fallback alias다.
+- current gateway의 canonical upstream env는 `EDITOR_SERVICE_URL=http://editor-service:8083`, `REDIS_HOST=redis`다.
 
 ## Rules
 - 공통 규칙은 여기로 복제하지 않고 [shared](../shared/README.md)를 링크한다.

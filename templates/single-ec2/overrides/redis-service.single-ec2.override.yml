@@ -7,7 +7,6 @@ services:
       shared-service-network:
         aliases:
           - redis
-          - central-redis
 
   redis-exporter:
     restart: unless-stopped

@@ -63,7 +63,7 @@ Client
 ## Notes
 - Gateway는 `/v1` prefix를 strip하거나 route별 rewrite를 적용해 upstream으로 전달한다.
 - Upstream service 문서에는 public `/v1` prefix를 구현 요구사항처럼 적지 않는다.
-- current gateway runtime은 `EDITOR_SERVICE_URL`을 읽고, `BLOCK_SERVICE_URL`은 legacy fallback alias로만 허용한다.
+- current gateway runtime은 editor upstream을 `EDITOR_SERVICE_URL` 하나로 읽는다.
 - Authz는 code, 문서, prod compose 모두 `authz-service`를 canonical service key로 사용한다.
 - Gateway는 현재 public `/v1/permissions/**`를 직접 proxy하지 않는다. `ADMIN` route 판정은 내부 `POST /permissions/internal/admin/verify` 호출로 수행한다.
 - Runtime alias인 `GET /v1` 같은 서비스 내부 상태 경로는 public API versioning과 별개다.

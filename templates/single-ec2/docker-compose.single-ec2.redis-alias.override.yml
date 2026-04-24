@@ -7,7 +7,6 @@ services:
       service-backbone-shared:
         aliases:
           - redis
-          - central-redis
 
 networks:
   service-backbone-shared:

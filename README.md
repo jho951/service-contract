@@ -91,11 +91,11 @@ service-contract 계약 변경
 | --- | --- | --- | --- | --- |
 | Gateway | project `gateway-service`, service `gateway-service`, alias `gateway` | `8080` | public entry | 외부 ingress와 public `/v1/**` 소유. runtime status endpoint는 `/health`, `/ready`도 함께 노출한다. editor upstream은 current runtime에서 `EDITOR_SERVICE_URL`을 canonical로 읽고, Authz 위임은 `AUTHZ_ADMIN_VERIFY_URL`을 직접 사용한다. |
 | Auth | project/service `auth-service` | `8081` container, local JVM `8081` | private | 인증 원천, JWT/JWKS, session |
-| Authz | base/prod compose service `authz-service` | `8084` | private | 관리자 인가, RBAC/policy. dev compose는 `authz-mysql`을 함께 띄우고 Redis는 외부 `central-redis`를 사용한다. env/terraform에는 `PERMISSION_*` 계열 legacy 이름이 남아 있을 수 있다. |
+| Authz | base/prod compose service `authz-service` | `8084` | private | 관리자 인가, RBAC/policy. dev compose는 `authz-mysql`을 함께 띄우고 Redis는 외부 `redis`를 사용한다. env/terraform에는 `PERMISSION_*` 계열 legacy 이름이 남아 있을 수 있다. |
 | User | service `user-service` | `8082` | private | 사용자 마스터/소셜/visibility |
-| Editor | service `editor-service`, shared-network alias `documents-service` | `8083` | private | repo 이름은 `editor-service`이고 현재 app identity도 `editor-service`로 정렬돼 있다. 다만 network alias와 일부 운영 문맥에는 `documents-service`가 남아 있다. |
-| Redis | project `redis-server-*`, service `redis-server`, alias `central-redis` | `6379` | private | 캐시/세션 저장 계층. exporter container 기본 이름은 `central-redis-exporter`다. |
+| Editor | service `editor-service`, DB host `editor-mysql` | `8083` | private | repo 이름과 app identity를 모두 `editor-service`로 맞춘다. editor 전용 DB host와 runtime 이름도 같은 축으로 정렬한다. |
+| Redis | project `redis-server-*`, service `redis-server`, shared alias `redis` | `6379` | private | 캐시/세션 저장 계층. exporter container 기본 이름은 `redis-exporter`다. |
 | Monitoring | project `monitoring-server` | Prometheus `9090`, Grafana host default `3005`, Loki `3100` | operator/private | Grafana container는 `3000`을 쓰지만 compose host 기본값은 `3005`다. dev Grafana는 각 서비스 private network에 붙고 Auth/User/Editor/Authz MySQL datasource를 기본 provisioning한다. |
 
 - contract의 서비스 디렉토리 이름은 repository 이름을 유지한다.
-- 현재 구현은 `documents-service`, `central-redis`, `redis-server`, `monitoring-server`, `gateway` alias 같은 legacy/runtime 이름이 함께 존재한다.
+- canonical 내부 이름은 `auth-mysql`, `user-mysql`, `editor-mysql`, `editor-service`, `redis`, `redis-server`를 기준으로 맞춘다.

@@ -34,7 +34,8 @@ repo별 차이는 [registry/repositories.yml](../registry/repositories.yml)의 `
 - 다중 이미지 서비스는 `${deploy_environment}-${service_name}-<component>` suffix를 사용한다.
 - 실제 배포 태그는 `${GITHUB_SHA}`를 기본 immutable tag로 사용한다.
 - `latest` 태그는 `main` 또는 `master`에서만 추가 발행하고, deploy 대상 태그로 직접 사용하지 않는다.
-- EC2 또는 원격 Docker host는 CI가 만든 이미지를 `docker compose pull && docker compose up -d`로만 반영한다.
+- EC2 또는 원격 Docker host는 CI가 만든 이미지를 `docker compose pull [service...] && docker compose up -d [service...]` 또는 동등한 서비스 단위 pull/up 방식으로 반영한다.
+- 전체 스택 초기 기동이 아니라 서비스 단건 CD라면 대상 서비스만 지정해서 반영하는 것을 우선한다.
 - private repository 접근 토큰과 key는 CI 서버 또는 로컬 build 환경에만 두고, production runtime에는 주입하지 않는다.
 - image-only EC2 배포를 쓰는 repo는 저장소 안에 `deploy/ec2` 산출물을 둔다.
 - `deploy/ec2`에는 최소한 아래 파일을 둔다.

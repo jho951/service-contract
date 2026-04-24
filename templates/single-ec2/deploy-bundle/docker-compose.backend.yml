@@ -4,7 +4,7 @@ services:
   redis-server:
     image: ${REDIS_IMAGE:?REDIS_IMAGE is required}
     pull_policy: always
-    container_name: ${REDIS_CONTAINER_NAME:-central-redis}
+    container_name: ${REDIS_CONTAINER_NAME:-redis-server}
     restart: unless-stopped
     environment:
       REDIS_CONFIG_FILE: ${REDIS_CONFIG_FILE:-/usr/local/etc/redis/prod/redis.conf}
@@ -18,7 +18,6 @@ services:
       service-shared:
         aliases:
           - redis
-          - central-redis
     healthcheck:
       test:
         - CMD-SHELL
@@ -31,7 +30,7 @@ services:
   redis-exporter:
     image: ${REDIS_EXPORTER_IMAGE:-oliver006/redis_exporter:v1.67.0}
     pull_policy: always
-    container_name: ${REDIS_EXPORTER_CONTAINER_NAME:-central-redis-exporter}
+    container_name: ${REDIS_EXPORTER_CONTAINER_NAME:-redis-exporter}
     restart: unless-stopped
     environment:
       REDIS_ADDR: redis://redis-server:6379
@@ -43,8 +42,6 @@ services:
       service-shared:
         aliases:
           - redis-exporter
-          - central-redis-exporter
-          - central-redis-exporter-dev
 
   auth-mysql:
     image: ${AUTH_MYSQL_IMAGE:-mysql:8.0}
@@ -93,7 +90,7 @@ services:
           - auth-service
       auth-private: {}
 
-  mysql:
+  user-mysql:
     image: ${USER_MYSQL_IMAGE:-mysql:8.4}
     restart: unless-stopped
     environment:
@@ -121,7 +118,7 @@ services:
     networks:
       user-private:
         aliases:
-          - mysql
+          - user-mysql
 
   user-service:
     image: ${USER_SERVICE_IMAGE:?USER_SERVICE_IMAGE is required}
@@ -131,8 +128,9 @@ services:
       - ./.env.backend
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://user-mysql:3306/${MYSQL_DATABASE:-user_service}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true}
     depends_on:
-      mysql:
+      user-mysql:
         condition: service_healthy
     expose:
       - "8082"
@@ -157,7 +155,7 @@ services:
 
   editor-mysql:
     image: ${EDITOR_MYSQL_IMAGE:-mysql:8.0}
-    container_name: documents-mysql-prod
+    container_name: editor-mysql-prod
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD_PROD:?MYSQL_ROOT_PASSWORD_PROD is required}
@@ -174,7 +172,7 @@ services:
       timeout: 3s
       retries: 20
     networks:
-      - documents-private
+      - editor-private
 
   editor-service:
     image: ${EDITOR_SERVICE_IMAGE:?EDITOR_SERVICE_IMAGE is required}
@@ -198,10 +196,9 @@ services:
       SPRING_DATASOURCE_USERNAME: ${DB_USERNAME_PROD:-documents}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD_PROD:?DB_PASSWORD_PROD is required}
     networks:
-      documents-private: {}
+      editor-private: {}
       service-shared:
         aliases:
-          - documents-service
           - editor-service
     volumes:
       - editor-resource-data:/var/lib/documents/resources
@@ -328,7 +325,7 @@ networks:
   user-private:
     driver: bridge
     internal: true
-  documents-private:
+  editor-private:
     driver: bridge
     internal: true
   monitoring-private:

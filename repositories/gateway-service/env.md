@@ -12,16 +12,14 @@
 - `USER_SERVICE_URL=http://user-service:8082`
 - `EDITOR_SERVICE_URL=http://editor-service:8083`
 - `AUTHZ_ADMIN_VERIFY_URL=http://authz-service:8084/permissions/internal/admin/verify`
-- `REDIS_HOST=central-redis`
+- `REDIS_HOST=redis`
 - `REDIS_PORT=6379`
 - `GATEWAY_CORS_ALLOWED_ORIGINS=*`
 - `GATEWAY_FORWARD_AUTHORIZATION_HEADER=false`
 - `REDIS_PASSWORD`와 `REDIS_TIMEOUT_MS`는 Redis 연결 안정화를 위한 선택값이다.
-- 코드 기본값은 `REDIS_HOST=127.0.0.1`이지만, current gateway dev compose 기본값은 `central-redis`다.
+- 코드 기본값은 `REDIS_HOST=127.0.0.1`이지만, current gateway dev compose 기본값은 `redis`다.
 - current gateway dev compose는 `EDITOR_SERVICE_URL=http://editor-service:8083`를 기본값으로 둔다.
-- `BLOCK_SERVICE_URL`은 current runtime에서만 허용하는 legacy fallback alias다.
 - current gateway runtime은 `AUTHZ_SERVICE_URL`을 직접 읽지 않는다. 관리자 인가 위임은 `AUTHZ_ADMIN_VERIFY_URL` 하나로 결정한다.
-- prod/terraform 예제에는 `documents-service` alias가 남아 있을 수 있으므로 `EDITOR_SERVICE_URL` 전환 시 함께 점검한다.
 - `GATEWAY_FORWARD_AUTHORIZATION_HEADER`는 현재 핸들러의 주요 경로에서는 사용되지 않고, 호환성/전환용 설정으로 남아 있다.
 - 현재 구현은 외부 `Authorization`을 그대로 전달하지 않고 제거한 뒤, 인증 성공 시 내부 JWT만 다시 넣는다.
 
@@ -305,10 +303,9 @@ Bearer 토큰 검증 결과를 캐싱할 때 사용하는 설정이다.
 - HS 계열이면 `AUTH_JWT_SHARED_SECRET` 설정
 - `EDITOR_SERVICE_URL=http://editor-service:8083`
 - `AUTHZ_ADMIN_VERIFY_URL=http://authz-service:8084/permissions/internal/admin/verify`
-- `REDIS_HOST=central-redis`
+- `REDIS_HOST=redis`
 - `AUTH_JWT_AUDIENCE`는 정책이 있으면 명시, 없으면 비움
 - 운영 환경에서는 `GATEWAY_INTERNAL_REQUEST_SECRET`과 IP guard 목록도 명시하는 것이 좋다.
-- legacy env를 아직 쓰면 `BLOCK_SERVICE_URL`만 fallback으로 허용한다.
 
 ## 개발 환경
 - 필요 시 `AUTH_JWT_VERIFY_ENABLED=false`

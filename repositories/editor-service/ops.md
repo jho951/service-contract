@@ -1,6 +1,6 @@
 # Editor Operating Contract
 
-Editor 서버의 운영 계약은 repo 이름 `editor-service`와 runtime 이름 `documents-*`가 함께 존재하는 현재 구현을 전제로 한다.
+Editor 서버의 운영 계약은 repo 이름, runtime 이름, 내부 호출 이름을 모두 `editor-service` 축으로 맞춘 상태를 전제로 한다.
 
 ## 배포 원칙
 - v1 계약은 운영 기준으로 유지한다.
@@ -9,10 +9,10 @@ Editor 서버의 운영 계약은 repo 이름 `editor-service`와 runtime 이름
 - `Workspace` backup 코드는 `backup/workspace/` 아래에서만 관리한다.
 - 운영 중 v1 스키마를 깨는 변경은 금지한다.
 - current compose 기준 canonical service key는 `editor-service:8083`이다.
-- shared-network alias로 `documents-service`도 함께 유지한다.
+- 운영 DB host canonical name은 `editor-mysql`이다.
 - compose project 이름은 `editor-service-dev`, `editor-service-prod`를 사용한다.
 - application name은 `editor-service`다.
-- contract 문서에서는 repository 이름과 동일하게 `editor-service`를 canonical 이름으로 쓰고, `documents-service`는 alias 또는 legacy 운영 문맥으로만 다룬다.
+- contract 문서에서는 repository 이름과 동일하게 `editor-service`만 canonical 이름으로 사용한다.
 
 ## 데이터 운영
 - `Document`와 `Block`은 soft delete를 우선한다.

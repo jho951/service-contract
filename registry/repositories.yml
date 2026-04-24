@@ -82,9 +82,8 @@ repositories:
         auth_service_url: http://auth-service:8081
         user_service_url: http://user-service:8082
         editor_service_url: http://editor-service:8083
-        editor_service_url_legacy_alias: http://documents-service:8083
         authz_admin_verify_url: http://authz-service:8084/permissions/internal/admin/verify
-        redis_host: central-redis
+        redis_host: redis
       authz_cache_prefix_default: "gateway:admin-authz:"
     ci: *ci_spring_boot
     cd:
@@ -106,6 +105,7 @@ repositories:
       dev_host_port: 8081
       shared_network: service-backbone-shared
       private_network: auth-private
+      db_host: auth-mysql
       metrics_path: /actuator/prometheus
     ci: *ci_spring_boot
     cd:
@@ -127,7 +127,7 @@ repositories:
       container_port: 8084
       dev_private_network: authz-private
       dev_mysql_service: authz-mysql
-      redis_host_default_dev: central-redis
+      redis_host_default_dev: redis
       internal_auth_default_mode: HYBRID
       metrics_path: /actuator/prometheus
       env_prefixes:
@@ -151,6 +151,7 @@ repositories:
       container_port: 8082
       shared_network: service-backbone-shared
       private_network: user-private
+      db_host: user-mysql
       metrics_path: /actuator/prometheus
     ci: *ci_spring_boot
     cd:
@@ -169,19 +170,18 @@ repositories:
       compose_project_dev: editor-service-dev
       compose_project_prod: editor-service-prod
       compose_service: editor-service
-      shared_aliases:
-        - documents-service
       container_port: 8083
       application_name: editor-service
-      private_network: documents-private
+      private_network: editor-private
+      db_host: editor-mysql
       content_block_types:
         - paragraph
         - heading1
         - heading2
         - heading3
       uuid_jdbc_type: CHAR
-      host_bind_var: DOCUMENTS_SERVICE_HOST_BIND
-      host_port_var: DOCUMENTS_SERVICE_HOST_PORT
+      host_bind_var: EDITOR_SERVICE_HOST_BIND
+      host_port_var: EDITOR_SERVICE_HOST_PORT
       metrics_path: /actuator/prometheus
     ci: *ci_spring_boot
     cd:
@@ -201,8 +201,8 @@ repositories:
       compose_project_prod: redis-server-prod
       compose_service: redis-server
       shared_aliases:
-        - central-redis
-      exporter_container_default: central-redis-exporter
+        - redis
+      exporter_container_default: redis-exporter
       exporter_port: 9121
       metrics_path: /metrics
       shared_network_example_env: service-backbone-shared
@@ -230,7 +230,7 @@ repositories:
       grafana_dev_private_networks:
         - auth-private
         - user-private
-        - documents-private
+        - editor-private
         - authz-private
       grafana_dev_datasource_files:
         - docker/dev/grafana/provisioning/datasources/prometheus.yml

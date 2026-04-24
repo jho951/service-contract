@@ -43,9 +43,9 @@
 - target 추가/삭제, 공통 label 변경, operator endpoint 변경은 contract 변경으로 보고 `contract.lock.yml`을 갱신한다.
 - 현재 구현 repo의 compose project 이름은 `monitoring-server`다.
 - Grafana host 기본 포트는 compose 기준 `3005 -> 3000`이다.
-- dev Grafana는 `auth-private`, `user-private`, `documents-private`, `authz-private` 네트워크에도 붙어 각 서비스의 private MySQL에 직접 접근할 수 있다.
+- dev Grafana는 `auth-private`, `user-private`, `editor-private`, `authz-private` 네트워크에도 붙어 각 서비스의 private MySQL에 직접 접근할 수 있다.
 - dev Grafana datasource provisioning은 `docker/dev/grafana/provisioning/datasources/prometheus.yml`, `docker/dev/grafana/provisioning/datasources/mysql.yml`을 사용하며, MySQL datasource는 Auth/User/Editor/Authz 네 개를 기본 등록한다.
-- target file과 관련 런타임 이름 사이에는 `gateway-service`, `documents-service`, `redis-server`, `central-redis-exporter(-dev)`, `monitoring-server` 같은 이름이 함께 쓰일 수 있다.
+- target file과 관련 런타임 이름은 `gateway-service`, `editor-service`, `redis-server`, `redis-exporter`, `monitoring-server` 기준으로 맞춘다.
 
 ## 운영 배포 자산
 

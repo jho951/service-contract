@@ -39,7 +39,7 @@ dev compose는 `local-services.yml`을 `/etc/prometheus/targets/ec2-services.yml
 | `editor-service` | `editor-service:8083/actuator/prometheus` | `service=editor-service`, `ec2=ec2-2` |
 | `authz-service` | `authz-service:8084/actuator/prometheus` | `service=authz-service`, `ec2=ec2-2` |
 | `gateway-service` | `gateway-service:8080/actuator/prometheus` | `service=gateway-service`, `ec2=ec2-1` |
-| `redis-server exporter` | `central-redis-exporter-dev:9121/metrics` | `service=redis-server`, `ec2=ec2-3` |
+| `redis-server exporter` | `redis-exporter:9121/metrics` | `service=redis-server`, `ec2=ec2-3` |
 
 ## Service Coverage
 | Observed Service | Metrics Path | Health / Ready Reference | Dashboard Focus |
@@ -64,7 +64,7 @@ dev compose는 `local-services.yml`을 `/etc/prometheus/targets/ec2-services.yml
 ## Rules
 - `service` label은 current target file이 실제로 쓰는 값을 우선하며 현재 baseline은 `gateway-service`, `auth-service`, `user-service`, `editor-service`, `authz-service`, `redis-server`다.
 - 현재 구현 baseline에는 `env`, `role`, `instance`, `nginx`, `node` label/target이 없다. 이를 추가하면 contract와 dashboard/query를 함께 갱신한다.
-- dev는 Docker service name과 `central-redis-exporter-dev`를 사용하고, prod는 EC2 private DNS/IP와 `redis-server` label을 유지한다.
+- dev는 Docker service name과 `redis-exporter`를 사용하고, prod는 EC2 private DNS/IP와 `redis-server` label을 유지한다.
 - Redis는 exporter target만 보는 것이 아니라 `auth-service`, `authz-service`, `gateway-service`의 dependency metric과 함께 상관 분석한다.
 - path가 다른 target은 Prometheus scrape job을 분리하거나 `__metrics_path__` relabeling을 명시한다.
 - actuator metrics endpoint는 Gateway/operator network에서만 접근 가능해야 한다.

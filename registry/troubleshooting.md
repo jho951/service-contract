@@ -68,7 +68,7 @@
 1. `./scripts/msa-stack.sh ps`로 컨테이너 이름과 포트를 본다.
 2. current 기준 authz compose service key는 dev/prod 모두 `authz-service`인지 확인한다.
 3. Gateway 환경변수가 실제 authz verify endpoint를 바라보는지 확인한다.
-4. editor upstream은 current 구현 기준 `EDITOR_SERVICE_URL -> editor-service:8083`인지 확인하고, legacy alias를 쓰면 `documents-service`도 함께 확인한다.
+4. editor upstream은 current 구현 기준 `EDITOR_SERVICE_URL -> editor-service:8083`인지 확인한다.
 
 #### 3. Gateway가 로그인 이후에도 세션을 못 찾음
 ##### 증상
@@ -460,7 +460,7 @@
 ##### 원인
 - 비밀번호 불일치
 - host/port 오타
-- Redis가 `redis-server` / `central-redis`가 아닌 다른 이름으로 떠 있거나 shared network가 맞지 않음
+- Redis가 `redis-server` / `redis`가 아닌 다른 이름으로 떠 있거나 shared network가 맞지 않음
 
 ##### 확인
 - `repositories/redis-service/ops.md`
@@ -468,7 +468,7 @@
 
 ##### 조치
 1. `redis-cli PING`으로 직접 확인한다.
-2. Gateway/Authz/terraform 예시는 `central-redis`, Redis repo service key는 `redis-server`를 쓰는지 확인한다.
+2. 내부 호출 env는 `REDIS_HOST=redis`, Redis repo service key는 `redis-server`인지 확인한다.
 3. Redis 예제 env의 `service-backbone-shared`와 실제 shared network 이름이 같은지 확인한다.
 
 #### 3. 키 prefix가 섞임
@@ -1043,7 +1043,7 @@ git diff --check
 - IntelliJ local bootRun에서 user lookup이 다른 서비스 포트로 간다.
 
 #### 원인
-- Redis host가 `central-redis`가 아닌 다른 이름으로 남아 있다.
+- Redis host가 `redis`가 아닌 다른 이름으로 남아 있다.
 - local `USER_SERVICE_BASE_URL`이 실제 user-service 포트 `8082`와 다르다.
 
 #### 확인
@@ -1051,7 +1051,7 @@ git diff --check
 - `repositories/user-service/README.md`
 
 #### 조치
-1. auth-service 예시 Redis host는 `central-redis`로 유지한다.
+1. auth-service 예시 Redis host는 `redis`로 유지한다.
 2. local `USER_SERVICE_BASE_URL`은 `http://localhost:8082` 기준으로 맞춘다.
 
 ### 4. Monitoring은 dev와 prod target 파일을 분리해야 한다
@@ -1091,7 +1091,7 @@ git diff --check
 
 ### 6. authz-service dev compose에 Redis가 내장돼 있으면 branch drift를 의심한다
 #### 증상
-- authz dev stack과 redis-service dev stack을 같이 올릴 때 `6379` 충돌 또는 `central-redis` alias 충돌이 난다.
+- authz dev stack과 redis-service dev stack을 같이 올릴 때 `6379` 충돌 또는 `redis` alias 충돌이 난다.
 
 #### 원인
 - 최신 main이 아니라 과거 branch에서 authz-service dev compose가 Redis를 함께 띄우는 경우가 있다.
@@ -1102,7 +1102,7 @@ git diff --check
 
 #### 조치
 1. 최신 기준 authz-service dev compose에는 Redis가 없어야 한다.
-2. 공용 Redis는 `redis-service`의 `central-redis` 하나만 사용한다.
+2. 공용 Redis host는 `redis-service`의 `redis` 하나만 사용한다.
 
 ### 7. `GET /v1/auth/sso/start`는 파라미터 없이 호출하면 `400 / 9015 INVALID_REQUEST`로 실패한다
 #### 증상
@@ -1719,14 +1719,14 @@ git diff --check
 
 #### 원인
 - editor-service 자체는 `DB_URL_PROD`를 쓰도록 설계돼 있는데, 배포 번들의 공통 `.env.backend`에서 흘러온 `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`가 먼저 적용될 수 있다.
-- 그 값이 user-service용 `jdbc:mysql://mysql:3306/user_service...`를 가리키면 editor-service가 자기 전용 MySQL(`editor-mysql`) 대신 잘못된 DB로 붙으려다 부팅에 실패한다.
+- 그 값이 user-service용 `jdbc:mysql://user-mysql:3306/user_service...`를 가리키면 editor-service가 자기 전용 MySQL(`editor-mysql`) 대신 잘못된 DB로 붙으려다 부팅에 실패한다.
 - 결과적으로 gateway는 살아 있지만 editor upstream이 재기동 루프에 들어가며 `502`가 난다.
 
 #### 확인
 - `docker logs editor-service-prod`
 - `docker inspect editor-service-prod --format '{{json .Config.Env}}'`
 - `docker compose --env-file /opt/deploy/.env.backend -f /opt/deploy/docker-compose.backend.yml config`
-- `docker network inspect single-ec2-backend_documents-private`
+- `docker network inspect single-ec2-backend_editor-private`
 
 #### 조치
 1. deploy bundle `editor-service.environment`에 아래 값을 명시적으로 override 한다.

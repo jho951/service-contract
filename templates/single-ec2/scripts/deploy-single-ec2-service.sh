@@ -9,6 +9,7 @@ usage() {
 SERVICE_NAME="${1:-}"
 REPO_DIR="${2:-}"
 ACTION="${3:-up}"
+TEMP_ENV_FILE=""
 
 [[ -n "$SERVICE_NAME" && -n "$REPO_DIR" ]] || usage
 [[ -d "$REPO_DIR" ]] || { echo "Repo dir not found: $REPO_DIR" >&2; exit 1; }
@@ -17,6 +18,72 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 OVERRIDE_DIR="$TEMPLATE_ROOT/overrides"
 NETWORK_NAME="${SERVICE_SHARED_NETWORK:-service-backbone-shared}"
+
+cleanup() {
+  if [[ -n "$TEMP_ENV_FILE" && -f "$TEMP_ENV_FILE" ]]; then
+    rm -f "$TEMP_ENV_FILE"
+  fi
+}
+trap cleanup EXIT
+
+declare -A SERVICE_PROJECT_NAME=(
+  [gateway-service]="gateway-service"
+  [auth-service]="auth-service"
+  [user-service]="user-service-prod"
+  [authz-service]="authz-service"
+  [editor-service]="editor-service-prod"
+  [redis-service]="redis-server"
+  [monitoring-service]="monitoring-server"
+)
+
+declare -A SERVICE_DEFAULT_ENV_FILE=(
+  [gateway-service]=".env.prod"
+  [auth-service]=".env.prod"
+  [user-service]=".env.prod"
+  [authz-service]=".env.prod"
+  [editor-service]=".env.prod"
+  [redis-service]="env.docker.prod"
+  [monitoring-service]=".env.prod"
+)
+
+declare -A SERVICE_ENV_MODE=(
+  [gateway-service]="required"
+  [auth-service]="required"
+  [user-service]="required"
+  [authz-service]="required"
+  [editor-service]="required"
+  [redis-service]="required"
+  [monitoring-service]="optional"
+)
+
+declare -A SERVICE_ALLOW_ENV_OVERRIDE=(
+  [redis-service]="true"
+  [monitoring-service]="true"
+)
+
+declare -A SERVICE_COMPOSE_FILES=(
+  [gateway-service]="docker/compose.yml docker/prod/compose.yml"
+  [auth-service]="docker/compose.yml docker/prod/compose.yml"
+  [user-service]="docker/compose.yml docker/prod/compose.yml"
+  [authz-service]="docker/compose.yml docker/prod/compose.yml"
+  [editor-service]="docker/prod/compose.yml"
+  [redis-service]="docker/prod/compose.yml"
+  [monitoring-service]="docker/prod/compose.yml"
+)
+
+declare -A SERVICE_OVERRIDE_FILE=(
+  [gateway-service]="gateway-service.single-ec2.override.yml"
+  [auth-service]="auth-service.single-ec2.override.yml"
+  [user-service]="user-service.single-ec2.override.yml"
+  [authz-service]="authz-service.single-ec2.override.yml"
+  [editor-service]="editor-service.single-ec2.override.yml"
+  [redis-service]="redis-service.single-ec2.override.yml"
+  [monitoring-service]="monitoring-service.single-ec2.override.yml"
+)
+
+TARGET_ENV_FILE=""
+TARGET_PROJECT_NAME=""
+TARGET_COMPOSE_ARGS=()
 
 ensure_network() {
   if ! docker network inspect "$NETWORK_NAME" >/dev/null 2>&1; then
@@ -47,67 +114,50 @@ run_compose() {
   esac
 }
 
-ensure_network
+resolve_env_file() {
+  local service="$1"
+  local env_path=""
 
-case "$SERVICE_NAME" in
-  gateway-service)
-    ENV_FILE="$REPO_DIR/.env.prod"
-    [[ -f "$ENV_FILE" ]] || { echo "Env file not found: $ENV_FILE" >&2; exit 1; }
-    run_compose "$ENV_FILE" "gateway-service" \
-      -f "$REPO_DIR/docker/compose.yml" \
-      -f "$REPO_DIR/docker/prod/compose.yml" \
-      -f "$OVERRIDE_DIR/gateway-service.single-ec2.override.yml"
-    ;;
-  auth-service)
-    ENV_FILE="$REPO_DIR/.env.prod"
-    [[ -f "$ENV_FILE" ]] || { echo "Env file not found: $ENV_FILE" >&2; exit 1; }
-    run_compose "$ENV_FILE" "auth-service" \
-      -f "$REPO_DIR/docker/compose.yml" \
-      -f "$REPO_DIR/docker/prod/compose.yml" \
-      -f "$OVERRIDE_DIR/auth-service.single-ec2.override.yml"
-    ;;
-  user-service)
-    ENV_FILE="$REPO_DIR/.env.prod"
-    [[ -f "$ENV_FILE" ]] || { echo "Env file not found: $ENV_FILE" >&2; exit 1; }
-    run_compose "$ENV_FILE" "user-service-prod" \
-      -f "$REPO_DIR/docker/compose.yml" \
-      -f "$REPO_DIR/docker/prod/compose.yml" \
-      -f "$OVERRIDE_DIR/user-service.single-ec2.override.yml"
-    ;;
-  authz-service)
-    ENV_FILE="$REPO_DIR/.env.prod"
-    [[ -f "$ENV_FILE" ]] || { echo "Env file not found: $ENV_FILE" >&2; exit 1; }
-    run_compose "$ENV_FILE" "authz-service" \
-      -f "$REPO_DIR/docker/compose.yml" \
-      -f "$REPO_DIR/docker/prod/compose.yml" \
-      -f "$OVERRIDE_DIR/authz-service.single-ec2.override.yml"
-    ;;
-  editor-service)
-    ENV_FILE="$REPO_DIR/.env.prod"
-    [[ -f "$ENV_FILE" ]] || { echo "Env file not found: $ENV_FILE" >&2; exit 1; }
-    run_compose "$ENV_FILE" "editor-service-prod" \
-      -f "$REPO_DIR/docker/prod/compose.yml" \
-      -f "$OVERRIDE_DIR/editor-service.single-ec2.override.yml"
-    ;;
-  redis-service)
-    ENV_FILE="${ENV_FILE:-$REPO_DIR/env.docker.prod}"
-    [[ -f "$ENV_FILE" ]] || { echo "Env file not found: $ENV_FILE" >&2; exit 1; }
-    run_compose "$ENV_FILE" "redis-server" \
-      -f "$REPO_DIR/docker/prod/compose.yml" \
-      -f "$OVERRIDE_DIR/redis-service.single-ec2.override.yml"
-    ;;
-  monitoring-service)
-    ENV_FILE="${ENV_FILE:-$REPO_DIR/.env.prod}"
-    if [[ ! -f "$ENV_FILE" ]]; then
-      ENV_FILE="/tmp/monitoring-service-empty.env"
-      : > "$ENV_FILE"
-    fi
-    run_compose "$ENV_FILE" "monitoring-server" \
-      -f "$REPO_DIR/docker/prod/compose.yml" \
-      -f "$OVERRIDE_DIR/monitoring-service.single-ec2.override.yml"
-    ;;
-  *)
+  if [[ "${SERVICE_ALLOW_ENV_OVERRIDE[$service]:-false}" == "true" && -n "${ENV_FILE:-}" ]]; then
+    env_path="$ENV_FILE"
+  else
+    env_path="$REPO_DIR/${SERVICE_DEFAULT_ENV_FILE[$service]}"
+  fi
+
+  if [[ -f "$env_path" ]]; then
+    printf '%s\n' "$env_path"
+    return 0
+  fi
+
+  if [[ "${SERVICE_ENV_MODE[$service]}" == "optional" ]]; then
+    TEMP_ENV_FILE="$(mktemp "/tmp/${service}.XXXXXX")"
+    : > "$TEMP_ENV_FILE"
+    printf '%s\n' "$TEMP_ENV_FILE"
+    return 0
+  fi
+
+  echo "Env file not found: $env_path" >&2
+  exit 1
+}
+
+prepare_service() {
+  local file
+
+  [[ -n "${SERVICE_PROJECT_NAME[$SERVICE_NAME]:-}" ]] || {
     echo "Unsupported service: $SERVICE_NAME" >&2
     exit 1
-    ;;
-esac
+  }
+
+  TARGET_ENV_FILE="$(resolve_env_file "$SERVICE_NAME")"
+  TARGET_PROJECT_NAME="${SERVICE_PROJECT_NAME[$SERVICE_NAME]}"
+  TARGET_COMPOSE_ARGS=()
+
+  for file in ${SERVICE_COMPOSE_FILES[$SERVICE_NAME]}; do
+    TARGET_COMPOSE_ARGS+=(-f "$REPO_DIR/$file")
+  done
+  TARGET_COMPOSE_ARGS+=(-f "$OVERRIDE_DIR/${SERVICE_OVERRIDE_FILE[$SERVICE_NAME]}")
+}
+
+ensure_network
+prepare_service
+run_compose "$TARGET_ENV_FILE" "$TARGET_PROJECT_NAME" "${TARGET_COMPOSE_ARGS[@]}"
