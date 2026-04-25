@@ -51,6 +51,7 @@ dependencies {
 - `gateway-service`, `auth-service`, `authz-service`, `user-service`, `editor-service`는 published `4.0.0` coordinate를 소비하는 main 브랜치 상태로 반영됐다.
 - 5개 서비스 CD는 모두 성공했다. `authz-service`는 single-EC2에서 stale `authz-service` container가 남아도 재배포되도록 `docker compose ... rm -sf authz-service || true` guard를 추가했다.
 - `editor-service`의 prod resource backing도 `ResourceContentStore` port 구현으로 정리돼, 5개 서비스 compile surface에서 raw 1계층 직접 의존은 남아 있지 않다.
+- 다만 `editor-service`의 prod filesystem backing은 아직 service-owned `ResourceContentStore` 구현이다. `editor v2` rollout에서는 이 경계를 `platform-resource` optional support module로 같이 승격하는 것을 목표로 한다.
 
 필요할 때만 추가하는 sanctioned add-on:
 
@@ -192,6 +193,9 @@ Gateway/edge 서비스가 주로 쓰는 surface:
   - `PlatformRateLimitPort`
   - `ResourceContentStore`
   - `ResourceLifecyclePublisher`
+- 후속 계획:
+  - 현재 prod filesystem backing은 service-owned `ResourceContentStore` 구현으로 유지한다.
+  - `editor v2` rollout에서는 `platform-resource-support-filesystem` 또는 동등한 platform-owned prod backing 모듈로 승격해 서비스 bean을 제거한다.
 
 ## Legacy Replacement
 

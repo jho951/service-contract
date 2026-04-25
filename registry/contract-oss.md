@@ -142,6 +142,9 @@ dependencies {
 원칙:
 
 - file-storage/notification raw 좌표는 adapter 내부에 남기고, 서비스는 resource public contract만 본다.
+- 운영 backing 구현이 generic filesystem/file-storage 조합이라면 장기적으로 2계층 optional support module이 소유한다.
+- 현재 `editor-service`의 prod `ResourceContentStore`는 허용된 임시 service-owned composition으로 본다.
+- 이 임시 경계는 `editor v2` rollout에서 `platform-resource` optional support module로 승격하는 것을 목표로 한다.
 
 ## 변경된 사용법
 

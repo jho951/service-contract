@@ -63,6 +63,14 @@
 - `platform.resource.storage.root-directory`는 local fallback 저장 위치만 정하고, 운영 storage backing은 `ResourceContentStore` SPI로 교체한다.
 - `documents-boot`는 `hibernate.type.preferred_uuid_jdbc_type=CHAR`를 사용해 현재 UUID 영속 바인딩을 문자열 기반으로 고정한다.
 
+## Editor v2 And Platform Rollout
+- 현재 prod filesystem backing은 구조 위반은 아니지만 최종 형태는 아니다. generic filesystem backing 구현을 서비스가 소유하고 있기 때문이다.
+- `editor v2` rollout은 문서/블록 API 확장만이 아니라 `platform-resource` 운영 backing 승격도 함께 다룬다.
+- 목표 상태는 service-owned `DocumentsResourcePlatformConfiguration` 제거다.
+- `editor-service`는 v2에서 `platform-resource`가 제공하는 optional prod backing module만 추가하고, 서비스는 `platform.resource.*` 설정과 kind 정책만 소유한다.
+- 후보 모듈 이름은 `platform-resource-support-filesystem`이며, 실제 이름은 platform repo에서 최종 확정한다.
+- 이 작업이 끝나면 `editor-service`는 local/dev의 `platform-resource-support-local`, 운영의 platform-owned filesystem support module을 구분해 소비한다.
+
 ## 원칙
 1. v1은 현재 운영 기준이다.
 2. main 확장은 shared operation core + separated persistence 설계안이다.

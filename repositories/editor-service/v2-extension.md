@@ -28,6 +28,12 @@
 - CRUD 전체의 단일 컨트롤러 통합
 - type별 권한/소유권/콘텐츠 규칙 통합
 
+## Platform Rollout Coupling
+- `editor v2`는 API/영속 구조 변경만 따로 가지 않고, platform runtime 경계 정리와 함께 진행한다.
+- 현재 prod filesystem backing은 service-owned `ResourceContentStore` 구현이 맡고 있다.
+- v2 rollout에서는 이 구현을 `platform-resource` optional support module로 승격해 서비스에서 제거하는 것을 포함한다.
+- 즉 v2 기준 `editor-service`는 resource kind 정책과 도메인 사실만 소유하고, generic filesystem backing 조립은 2계층이 소유한다.
+
 ## 권장 구조
 - `DocumentController`
 - 블록 전용 CRUD 컨트롤러
