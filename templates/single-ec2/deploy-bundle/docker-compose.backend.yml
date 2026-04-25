@@ -102,6 +102,8 @@ services:
     volumes:
       - user-mysql-data:/var/lib/mysql
       - ./config/user-mysql/my.cnf:/etc/mysql/conf.d/my.cnf:ro
+      - ./config/user-mysql/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
+      - ./config/user-mysql/user-schema.sql:/schema/user-schema.sql:ro
     healthcheck:
       test:
         - CMD

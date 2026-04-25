@@ -93,3 +93,4 @@ cd /opt/deploy
 - backend 서비스는 host publish 없이 Docker network alias로만 통신한다.
 - `logs`는 backend/frontend 혼합 타깃을 한 번에 tail하지 않는다. 필요하면 `./scripts/deploy-stack.sh logs gateway-service`처럼 나눠서 실행한다.
 - `.env.backend.example`의 `AUTH_MYSQL_IMAGE`, `USER_MYSQL_IMAGE`, `EDITOR_MYSQL_IMAGE`, `REDIS_EXPORTER_IMAGE`는 기본값이 Docker Hub 기준이다. 운영 안정성을 높이려면 ECR mirror 이미지로 바꿔 두는 편이 낫다.
+- `user-mysql`은 빈 volume으로 처음 올라올 때 `users`, `user_social_accounts` baseline schema를 자동 초기화한다. 기존 volume을 재사용하는 경우 init SQL은 다시 실행되지 않으므로, 스키마 누락이면 `config/user-mysql/user-schema.sql`을 수동 적용해야 한다.
